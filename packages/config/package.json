@@ -1,0 +1,10 @@
+{
+  "name": "@veedu/config",
+  "version": "0.1.0",
+  "private": true,
+  "files": [
+    "tsconfig.base.json",
+    "eslint.base.mjs",
+    "tailwind.preset.ts"
+  ]
+}

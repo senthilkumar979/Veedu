@@ -1,0 +1,17 @@
+node_modules
+.pnpm-store
+dist
+.next
+.turbo
+out
+build
+.env
+.env.local
+.env*.local
+*.log
+.DS_Store
+coverage
+.vercel
+apps/desktop/src-tauri/target
+apps/web/public/sw.js
+*.tsbuildinfo
