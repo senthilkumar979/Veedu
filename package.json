@@ -1,0 +1,17 @@
+{
+  "name": "veedu",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.33.3",
+  "scripts": {
+    "dev": "pnpm --filter @veedu/web dev",
+    "build": "pnpm --filter @veedu/web build",
+    "lint": "pnpm --filter @veedu/web lint",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "desktop:dev": "pnpm --filter @veedu/desktop tauri:dev",
+    "desktop:build": "pnpm --filter @veedu/desktop tauri:build"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
