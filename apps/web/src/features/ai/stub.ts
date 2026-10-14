@@ -24,7 +24,7 @@ export function stubHouseholdAssistant(question: string): AssistantReply {
     };
   }
   return {
-    answer: "I can summarize bills, documents, tasks, subscriptions, and upcoming dates for your household. Ask about this week, bills, or expiring documents. (Stub mode — set OPENAI_API_KEY or ANTHROPIC_API_KEY for live LLM.)",
+    answer: "I can summarize bills, documents, tasks, subscriptions, and upcoming dates for your household. Ask about this week, bills, or expiring documents. (Stub mode — set GEMINI_API_KEY for live LLM.)",
     sources: ["household"],
   };
 }

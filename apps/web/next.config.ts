@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
     "@veedu/types",
     "@veedu/api",
   ],
+  serverExternalPackages: ["web-push"],
   outputFileTracingRoot: path.join(__dirname, "../.."),
   experimental: {
     optimizePackageImports: ["lucide-react", "@veedu/ui"],
