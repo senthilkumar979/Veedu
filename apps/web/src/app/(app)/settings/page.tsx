@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, Badge, Input, Button } from "@veedu/ui";
 import { PageContainer } from "@/components/layout/page-container";
+import { PushNotificationsPanel } from "@/components/settings/push-notifications";
 import { useAuth } from "@/lib/auth";
 
 export default function SettingsPage() {
@@ -33,9 +34,8 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader><CardTitle>Notifications</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted">
-            <p>Bill reminders · Document expiry · Important dates · Task reminders · Subscription renewals · Daily briefing</p>
-            <p className="text-xs">Quiet hours: 22:00 – 07:00</p>
+          <CardContent>
+            <PushNotificationsPanel />
           </CardContent>
         </Card>
 
@@ -50,9 +50,16 @@ export default function SettingsPage() {
 
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle>Integrations & Data</CardTitle></CardHeader>
-          <CardContent className="text-sm text-muted">
-            Modular hooks for Google/Apple Calendar, Weather, Contacts, and email providers. Configure via env when ready.
-            Supabase migrations live in <code className="text-ink">supabase/migrations</code>.
+          <CardContent className="space-y-2 text-sm text-muted">
+            <p>
+              <strong className="text-ink">Live:</strong> Open-Meteo weather (home/parents place names geocoded), VAPID web push, Gemini AI when <code className="text-ink">GEMINI_API_KEY</code> is set.
+            </p>
+            <p>
+              <strong className="text-ink">Planned:</strong> Google Calendar and Google Contacts — not implemented yet.
+            </p>
+            <p>
+              Auth remains Supabase Auth only. Apply migrations in <code className="text-ink">supabase/migrations</code> for live push persistence.
+            </p>
           </CardContent>
         </Card>
       </div>

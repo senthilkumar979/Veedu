@@ -15,13 +15,63 @@ import {
   formatMoney,
   formatRelativeDue,
   greetingForHour,
-  stubWeather,
   taskProgress,
 } from "@veedu/domain";
+import type { WeatherSnapshot } from "@veedu/types";
 import { PageContainer } from "@/components/layout/page-container";
 import { EmptyState, ErrorState, LoadingBlock } from "@/components/shared/states";
+import { useWeather } from "@/hooks/use-weather";
 import { useAuth } from "@/lib/auth";
 import { useHouseholdData } from "@/lib/data";
+
+function WeatherTile({
+  label,
+  snapshot,
+  error,
+  isLoading,
+}: {
+  label: string;
+  snapshot: WeatherSnapshot | null | undefined;
+  error?: string;
+  isLoading?: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="rounded-lg bg-surface-subtle p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
+          {label}
+        </p>
+        <p className="mt-2 text-sm text-muted">Loading…</p>
+      </div>
+    );
+  }
+  if (!snapshot) {
+    return (
+      <div className="rounded-lg bg-surface-subtle p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
+          {label}
+        </p>
+        <p className="mt-2 text-sm text-muted">
+          {error || "Set a location in onboarding/settings"}
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-lg bg-surface-subtle p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
+        {label}
+      </p>
+      <p className="mt-1 text-2xl font-semibold text-ink">
+        {snapshot.temperature_c}°
+      </p>
+      <p className="text-sm text-muted">{snapshot.condition}</p>
+      <p className="text-xs text-subtle">
+        Feels like {snapshot.feels_like_c}° · {snapshot.location_label}
+      </p>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const { profile, household } = useAuth();
@@ -33,6 +83,10 @@ export default function DashboardPage() {
     documents,
     importantDates,
   } = useHouseholdData();
+  const weatherQuery = useWeather(
+    household?.home_location,
+    household?.parents_location,
+  );
 
   const loading =
     tasks.isLoading ||
@@ -52,11 +106,6 @@ export default function DashboardPage() {
         importantDates: importantDates.data ?? [],
       }),
     [documents.data, bills.data, tasks.data, subscriptions.data, importantDates.data],
-  );
-
-  const weather = stubWeather(
-    household?.home_location ?? "Home",
-    household?.parents_location ?? "Parents",
   );
 
   const todayEvents = useMemo(() => {
@@ -151,25 +200,29 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Weather</CardTitle>
+            <span className="text-xs text-subtle">Open-Meteo</span>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-3">
-            {[weather.home, weather.parents].map((w, idx) => (
-              <div
-                key={w.location_label}
-                className="rounded-lg bg-surface-subtle p-3"
-              >
-                <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
-                  {idx === 0 ? "Home" : "Parents"}
-                </p>
-                <p className="mt-1 text-2xl font-semibold text-ink">
-                  {w.temperature_c}°
-                </p>
-                <p className="text-sm text-muted">{w.condition}</p>
-                <p className="text-xs text-subtle">
-                  Feels like {w.feels_like_c}° · {w.location_label}
-                </p>
-              </div>
-            ))}
+            <WeatherTile
+              label="Home"
+              snapshot={weatherQuery.data?.home.snapshot}
+              error={
+                weatherQuery.isError
+                  ? "Weather unavailable"
+                  : weatherQuery.data?.home.error
+              }
+              isLoading={weatherQuery.isLoading}
+            />
+            <WeatherTile
+              label="Parents"
+              snapshot={weatherQuery.data?.parents.snapshot}
+              error={
+                weatherQuery.isError
+                  ? "Weather unavailable"
+                  : weatherQuery.data?.parents.error
+              }
+              isLoading={weatherQuery.isLoading}
+            />
           </CardContent>
         </Card>
 

@@ -13,5 +13,4 @@ build
 coverage
 .vercel
 apps/desktop/src-tauri/target
-apps/web/public/sw.js
 *.tsbuildinfo
