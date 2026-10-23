@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Activity,
   Bot,
+  CalendarClock,
   CalendarDays,
   Contact,
   CreditCard,
@@ -13,49 +15,46 @@ import {
   MapPin,
   Receipt,
   Settings,
-  Sparkles,
   Star,
+  Users,
   Wallet,
   CheckSquare,
   Radar,
   PenLine,
+  Banknote,
 } from "lucide-react";
 import { cn } from "@veedu/ui";
+import { PeacockFeather } from "@/components/brand/motifs";
 
-interface NavItem {
-  href: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
-interface NavSection {
-  title: string;
-  items: NavItem[];
-}
-
-const sections: NavSection[] = [
+const sections = [
   {
-    title: "Household",
+    title: "Day",
     items: [
       { href: "/", label: "Dashboard", icon: LayoutDashboard },
       { href: "/calendar", label: "Calendar", icon: CalendarDays },
       { href: "/tasks", label: "Tasks", icon: CheckSquare },
+      { href: "/due-dates", label: "Due dates", icon: CalendarClock },
+    ],
+  },
+  {
+    title: "Money",
+    items: [
+      { href: "/payments", label: "Payments", icon: Banknote },
       { href: "/bills", label: "Bills", icon: Receipt },
       { href: "/subscriptions", label: "Subscriptions", icon: CreditCard },
-      { href: "/documents", label: "Documents", icon: FileText },
       { href: "/accounts", label: "Accounts", icon: Wallet },
     ],
   },
   {
-    title: "People",
-    items: [{ href: "/contacts", label: "Contacts", icon: Contact }],
-  },
-  {
-    title: "Home",
+    title: "People & home",
     items: [
+      { href: "/family", label: "Family", icon: Users },
+      { href: "/contacts", label: "Contacts", icon: Contact },
+      { href: "/documents", label: "Documents", icon: FileText },
+      { href: "/activity", label: "Activity", icon: Activity },
       { href: "/home", label: "Home", icon: Home },
       { href: "/places", label: "Places", icon: MapPin },
-      { href: "/important-dates", label: "Important Dates", icon: Star },
+      { href: "/important-dates", label: "Dates", icon: Star },
     ],
   },
   {
@@ -66,30 +65,36 @@ const sections: NavSection[] = [
       { href: "/ai/content", label: "Content", icon: PenLine },
     ],
   },
-];
+] as const;
 
 export function Sidebar() {
   const pathname = usePathname();
 
   return (
     <aside
-      className="hidden h-dvh w-sidebar shrink-0 flex-col border-r border-border bg-surface md:flex"
+      className="sticky top-0 hidden h-full w-sidebar shrink-0 flex-col overflow-hidden border-r border-primary/20 bg-primary text-white md:flex"
       aria-label="Primary"
     >
-      <div className="flex h-16 items-center gap-2 px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white">
-          V
-        </div>
-        <div>
-          <p className="text-base font-semibold text-ink">Veedu</p>
-          <p className="text-xs text-muted">Household OS</p>
+      <div className="relative flex h-[4.25rem] shrink-0 items-center gap-3 overflow-hidden px-5">
+        <div
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/25 via-transparent to-transparent"
+          aria-hidden
+        />
+        <PeacockFeather className="relative h-10 w-8 shrink-0 text-accent-soft" />
+        <div className="relative min-w-0">
+          <p className="truncate text-base font-semibold tracking-tight">
+            Velan Illam
+          </p>
+          <p className="text-[0.65rem] font-medium uppercase tracking-[0.18em] text-accent-soft/90">
+            Household
+          </p>
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 pb-4">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-1">
         {sections.map((section) => (
-          <div key={section.title} className="mb-4">
-            <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wider text-subtle">
+          <div key={section.title} className="mb-5">
+            <p className="mb-1.5 px-3 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-white/45">
               {section.title}
             </p>
             <ul className="space-y-0.5">
@@ -104,13 +109,18 @@ export function Sidebar() {
                     <Link
                       href={item.href}
                       className={cn(
-                        "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors duration-fast",
+                        "group flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-medium transition-all duration-fast",
                         active
-                          ? "bg-primary-soft text-primary"
-                          : "text-muted hover:bg-surface-hover hover:text-ink",
+                          ? "bg-white text-primary shadow-card"
+                          : "text-white/85 hover:bg-white/10 hover:text-white",
                       )}
                     >
-                      <Icon className="h-[18px] w-[18px]" />
+                      <Icon
+                        className={cn(
+                          "h-4 w-4 shrink-0",
+                          active ? "text-accent" : "text-white/70 group-hover:text-white",
+                        )}
+                      />
                       {item.label}
                     </Link>
                   </li>
@@ -121,20 +131,19 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="border-t border-border p-3">
+      <div className="shrink-0 border-t border-white/10 p-3">
         <Link
           href="/settings"
           className={cn(
-            "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium text-muted hover:bg-surface-hover hover:text-ink",
-            pathname.startsWith("/settings") && "bg-primary-soft text-primary",
+            "flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm font-medium transition-colors",
+            pathname.startsWith("/settings")
+              ? "bg-white text-primary"
+              : "text-white/85 hover:bg-white/10",
           )}
         >
-          <Settings className="h-[18px] w-[18px]" />
+          <Settings className="h-4 w-4" />
           Settings
         </Link>
-        <p className="mt-2 flex items-center gap-1 px-2 text-xs text-subtle">
-          <Sparkles className="h-3 w-3" /> Calm command center
-        </p>
       </div>
     </aside>
   );

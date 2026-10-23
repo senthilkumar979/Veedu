@@ -30,7 +30,7 @@ export function NotificationCenter({
         <DialogHeader className="border-b border-border px-5 py-4">
           <DialogTitle>Notifications</DialogTitle>
           <DialogDescription>
-            Event-driven household alerts. Quiet hours: 22:00–07:00.
+            Event-driven household alerts. Quiet hours configurable in Settings.
           </DialogDescription>
         </DialogHeader>
         <ul className="max-h-[60vh] divide-y divide-border overflow-y-auto">

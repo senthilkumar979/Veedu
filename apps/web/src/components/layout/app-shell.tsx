@@ -55,16 +55,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-dvh bg-background text-ink">
+    <div className="flex h-dvh overflow-hidden bg-background pt-[env(safe-area-inset-top)] text-ink">
       <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <Header
           onOpenCommand={() => setCommandOpen(true)}
           onOpenSearch={() => setSearchOpen(true)}
           onOpenNotifications={() => setNotifyOpen(true)}
           unreadCount={unread}
         />
-        <main className="flex-1 overflow-y-auto pb-20 md:pb-6">{children}</main>
+        <main className="min-h-0 flex-1 overflow-y-auto bg-background bg-[url('/brand/dashboard-bg.png')] bg-cover bg-center pb-20 md:pb-3">
+          {children}
+        </main>
         <MobileNavigation />
       </div>
       <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />

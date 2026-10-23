@@ -32,7 +32,7 @@ export default function AssistantPage() {
   }
 
   return (
-    <PageContainer title="Household Assistant" description="Natural-language questions over household data · modular & optional">
+    <PageContainer title="Household Assistant" description="Natural-language questions over household data · modular & optional" backHref="/more">
       <Card className="mb-4 border-primary/20 bg-primary-soft/30">
         <CardContent className="py-4 text-sm text-ink">
           {reply.mode === "gemini" ? (
@@ -45,7 +45,7 @@ export default function AssistantPage() {
         </CardContent>
       </Card>
       <Card>
-        <CardHeader><CardTitle>Ask Veedu</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Ask Velan Illam</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <Input value={question} onChange={(e) => setQuestion(e.target.value)} aria-label="Question" />
           <div className="flex flex-wrap gap-2">

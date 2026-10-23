@@ -8,13 +8,21 @@ import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Dialog, Dialog
 import { homeItemSchema, homeServiceSchema, formatRelativeDue } from "@veedu/domain";
 import { PageContainer } from "@/components/layout/page-container";
 import { EmptyState, ErrorState, LoadingBlock } from "@/components/shared/states";
+import { RowActions } from "@/components/shared/row-actions";
 import { useHouseholdData } from "@/lib/data";
 
 type ItemValues = z.infer<typeof homeItemSchema>;
 type ServiceValues = z.infer<typeof homeServiceSchema>;
 
 export default function HomePage() {
-  const { homeItems, homeServices, addHomeItem, addHomeService } = useHouseholdData();
+  const {
+    homeItems,
+    homeServices,
+    addHomeItem,
+    addHomeService,
+    archiveHomeItem,
+    archiveHomeService,
+  } = useHouseholdData();
   const [itemOpen, setItemOpen] = useState(false);
   const [serviceOpen, setServiceOpen] = useState(false);
   const itemForm = useForm<ItemValues>({ resolver: zodResolver(homeItemSchema), defaultValues: { name: "", category: "Appliances", purchased_at: "", warranty_until: "", visibility: "shared", notes: "" } });
@@ -26,10 +34,12 @@ export default function HomePage() {
   return (
     <PageContainer title="Home" description="Inventory, warranties, and maintenance">
       <Tabs defaultValue="maintenance">
-        <TabsList>
-          <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
-          <TabsTrigger value="inventory">Inventory</TabsTrigger>
-        </TabsList>
+        <div className="mb-4 rounded-2xl border border-border bg-surface px-4 py-3 shadow-card">
+          <TabsList className="bg-surface-subtle">
+            <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+            <TabsTrigger value="inventory">Inventory</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="maintenance">
           <div className="mb-3 flex justify-end"><Button onClick={() => setServiceOpen(true)}>Add service</Button></div>
           {(homeServices.data ?? []).length === 0 ? (
@@ -38,11 +48,14 @@ export default function HomePage() {
             <ul className="space-y-2">
               {(homeServices.data ?? []).map((s) => (
                 <li key={s.id}><Card><CardContent className="flex items-center justify-between gap-3 py-4">
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-medium text-ink">{s.name}</p>
                     <p className="text-xs text-muted">{s.provider || "No provider"} · Last {s.last_serviced_at || "—"}</p>
                   </div>
-                  {s.next_due_at ? <Badge tone="warning">Due {formatRelativeDue(s.next_due_at)}</Badge> : <Badge>No due</Badge>}
+                  <div className="flex items-center gap-2">
+                    {s.next_due_at ? <Badge tone="warning">Due {formatRelativeDue(s.next_due_at)}</Badge> : <Badge>No due</Badge>}
+                    <RowActions onArchive={() => void archiveHomeService.mutateAsync(s.id)} />
+                  </div>
                 </CardContent></Card></li>
               ))}
             </ul>
@@ -55,9 +68,12 @@ export default function HomePage() {
           ) : (
             <ul className="space-y-2">
               {(homeItems.data ?? []).map((item) => (
-                <li key={item.id}><Card><CardContent className="py-4">
-                  <p className="text-sm font-medium text-ink">{item.name}</p>
-                  <p className="text-xs text-muted">{item.category} · Purchased {item.purchased_at || "—"} · Warranty {item.warranty_until || "—"}</p>
+                <li key={item.id}><Card><CardContent className="flex items-center justify-between gap-3 py-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-ink">{item.name}</p>
+                    <p className="text-xs text-muted">{item.category} · Purchased {item.purchased_at || "—"} · Warranty {item.warranty_until || "—"}</p>
+                  </div>
+                  <RowActions onArchive={() => void archiveHomeItem.mutateAsync(item.id)} />
                 </CardContent></Card></li>
               ))}
             </ul>

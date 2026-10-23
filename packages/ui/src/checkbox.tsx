@@ -14,12 +14,12 @@ export const Checkbox = React.forwardRef<
 >(({ className, label, id, ...props }, ref) => {
   const checkboxId = id ?? props.name;
   return (
-    <label className="inline-flex items-center gap-2 text-sm text-ink">
+    <label className="inline-flex min-h-12 items-center gap-3 text-sm text-ink">
       <CheckboxPrimitive.Root
         ref={ref}
         id={checkboxId}
         className={cn(
-          "flex h-5 w-5 items-center justify-center rounded-sm border border-border-strong bg-surface data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-white",
+          "relative flex h-6 w-6 shrink-0 items-center justify-center rounded-sm border border-border-strong bg-surface before:absolute before:-inset-3 before:content-[''] data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-white",
           className,
         )}
         {...props}

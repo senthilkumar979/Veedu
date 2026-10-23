@@ -6,7 +6,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { onboardingSchema } from "@veedu/domain";
+import { DEFAULT_CURRENCY } from "@veedu/types";
 import { Button, Card, CardContent, Input, Select } from "@veedu/ui";
+import { Vel } from "@/components/brand/motifs";
+import { CurrencySelect } from "@/components/shared/currency-select";
 import { useAuth } from "@/lib/auth";
 
 type Values = z.infer<typeof onboardingSchema>;
@@ -32,8 +35,12 @@ export default function OnboardingPage() {
       member_name: "",
       member_email: "",
       home_location: "Antwerp",
-      parents_location: "Dindigul",
-      currency: "EUR",
+      parents_location: "",
+      parent_a_label: "Amma",
+      parent_a_place: "Dindigul",
+      parent_b_label: "Appa",
+      parent_b_place: "",
+      currency: DEFAULT_CURRENCY,
       timezone: "Europe/Brussels",
     },
   });
@@ -47,7 +54,17 @@ export default function OnboardingPage() {
     setPending(true);
     setError(null);
     try {
-      await completeOnboarding(values);
+      const parents_locations = [
+        {
+          label: values.parent_a_label?.trim() || "Amma",
+          place: values.parent_a_place?.trim() || values.parents_location || "",
+        },
+        {
+          label: values.parent_b_label?.trim() || "Appa",
+          place: values.parent_b_place?.trim() || "",
+        },
+      ].filter((p) => p.place);
+      await completeOnboarding({ ...values, parents_locations });
       router.replace("/");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not finish onboarding");
@@ -57,12 +74,15 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-background px-4 py-10">
+    <div className="flex min-h-dvh items-center justify-center bg-background bg-[url('/brand/dashboard-bg.png')] bg-cover bg-center px-4 py-10">
       <Card className="w-full max-w-lg">
         <CardContent className="space-y-6 py-8">
           <div>
-            <p className="text-sm font-medium text-primary">Welcome to Veedu</p>
-            <h1 className="mt-1 text-2xl font-bold text-ink">
+            <div className="mb-3 flex items-center gap-2 text-primary">
+              <Vel className="h-8 w-4" />
+              <p className="text-sm font-medium">Welcome to Velan Illam</p>
+            </div>
+            <h1 className="text-2xl font-semibold tracking-tight text-ink">
               Set up your household
             </h1>
             <p className="mt-1 text-sm text-muted">
@@ -125,25 +145,33 @@ export default function OnboardingPage() {
                   error={form.formState.errors.home_location?.message}
                   {...form.register("home_location")}
                 />
-                <Input
-                  label="Parents location"
-                  {...form.register("parents_location")}
-                />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Input
+                    label="Parent 1 name"
+                    {...form.register("parent_a_label")}
+                  />
+                  <Input
+                    label="Parent 1 city"
+                    {...form.register("parent_a_place")}
+                  />
+                  <Input
+                    label="Parent 2 name"
+                    {...form.register("parent_b_label")}
+                  />
+                  <Input
+                    label="Parent 2 city"
+                    {...form.register("parent_b_place")}
+                  />
+                </div>
               </>
             ) : null}
 
             {step === 3 ? (
               <>
-                <Select
-                  label="Currency"
+                <CurrencySelect
+                  label="Preferred currency"
                   value={form.watch("currency")}
                   onValueChange={(v) => form.setValue("currency", v)}
-                  options={[
-                    { value: "EUR", label: "EUR · Euro" },
-                    { value: "USD", label: "USD · US Dollar" },
-                    { value: "INR", label: "INR · Indian Rupee" },
-                    { value: "GBP", label: "GBP · Pound" },
-                  ]}
                 />
                 <Select
                   label="Timezone"

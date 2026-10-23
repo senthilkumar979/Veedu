@@ -5,17 +5,17 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Veedu",
-    template: "%s · Veedu",
+    default: "Velan Illam",
+    template: "%s · Velan Illam",
   },
   description:
-    "Veedu — calm household command center for shared plans, tasks, and day-to-day coordination.",
-  applicationName: "Veedu",
+    "Velan Illam — a calm household command center for shared plans, tasks, and day-to-day coordination.",
+  applicationName: "Velan Illam",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Veedu",
+    title: "Velan Illam",
   },
   icons: {
     icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#5046C7",
+  themeColor: "#355747",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,

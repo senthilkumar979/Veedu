@@ -365,51 +365,46 @@ create policy "members_insert" on public.household_members for insert with check
 );
 create policy "members_update" on public.household_members for update using (public.is_household_member(household_id));
 
--- Generic visibility policies for feature tables
-do $$
-declare
-  t text;
-begin
-  foreach t in array array[
-    'task_categories','tasks','calendar_events','bills','subscriptions',
-    'document_categories','documents','accounts','contacts','places',
-    'important_dates','home_items','home_services'
-  ]
-  loop
-    execute format('create policy %I on public.%I for select using (
-      case when %L in (''task_categories'',''document_categories'') then public.is_household_member(household_id)
-      else public.can_access_record(household_id, visibility, owner_id) end
-    )', t || '_select', t, t);
-    execute format('create policy %I on public.%I for insert with check (public.is_household_member(household_id) and created_by = auth.uid())', t || '_insert', t);
-    execute format('create policy %I on public.%I for update using (
-      case when %L in (''task_categories'',''document_categories'') then public.is_household_member(household_id)
-      else public.can_access_record(household_id, visibility, owner_id) end
-    )', t || '_update', t, t);
-    execute format('create policy %I on public.%I for delete using (
-      case when %L in (''task_categories'',''document_categories'') then public.is_household_member(household_id)
-      else public.can_access_record(household_id, visibility, owner_id) end
-    )', t || '_delete', t, t);
-  end loop;
-end $$;
-
--- Fix policies for tables without visibility/owner/created_by
-drop policy if exists task_categories_select on public.task_categories;
-drop policy if exists task_categories_insert on public.task_categories;
-drop policy if exists task_categories_update on public.task_categories;
-drop policy if exists task_categories_delete on public.task_categories;
+-- Category tables (no visibility / owner_id / created_by)
 create policy task_categories_select on public.task_categories for select using (public.is_household_member(household_id));
 create policy task_categories_insert on public.task_categories for insert with check (public.is_household_member(household_id));
 create policy task_categories_update on public.task_categories for update using (public.is_household_member(household_id));
 create policy task_categories_delete on public.task_categories for delete using (public.is_household_member(household_id));
 
-drop policy if exists document_categories_select on public.document_categories;
-drop policy if exists document_categories_insert on public.document_categories;
-drop policy if exists document_categories_update on public.document_categories;
-drop policy if exists document_categories_delete on public.document_categories;
 create policy document_categories_select on public.document_categories for select using (public.is_household_member(household_id));
 create policy document_categories_insert on public.document_categories for insert with check (public.is_household_member(household_id));
 create policy document_categories_update on public.document_categories for update using (public.is_household_member(household_id));
 create policy document_categories_delete on public.document_categories for delete using (public.is_household_member(household_id));
+
+-- Visibility-scoped feature tables
+do $$
+declare
+  t text;
+begin
+  foreach t in array array[
+    'tasks','calendar_events','bills','subscriptions',
+    'documents','accounts','contacts','places',
+    'important_dates','home_items','home_services'
+  ]
+  loop
+    execute format(
+      'create policy %I on public.%I for select using (public.can_access_record(household_id, visibility, owner_id))',
+      t || '_select', t
+    );
+    execute format(
+      'create policy %I on public.%I for insert with check (public.is_household_member(household_id) and created_by = auth.uid())',
+      t || '_insert', t
+    );
+    execute format(
+      'create policy %I on public.%I for update using (public.can_access_record(household_id, visibility, owner_id))',
+      t || '_update', t
+    );
+    execute format(
+      'create policy %I on public.%I for delete using (public.can_access_record(household_id, visibility, owner_id))',
+      t || '_delete', t
+    );
+  end loop;
+end $$;
 
 create policy notifications_select on public.notifications for select using (user_id = auth.uid());
 create policy notifications_update on public.notifications for update using (user_id = auth.uid());

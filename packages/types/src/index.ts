@@ -25,11 +25,18 @@ export interface Profile {
   updated_at: string;
 }
 
+export interface ParentLocation {
+  label: string;
+  place: string;
+}
+
 export interface Household {
   id: string;
   name: string;
   home_location: string | null;
+  /** @deprecated Prefer parents_locations */
   parents_location: string | null;
+  parents_locations?: ParentLocation[] | null;
   timezone: string;
   currency: string;
   created_by: string;
@@ -87,6 +94,8 @@ export interface CalendarEvent {
   created_by: string;
   created_at: string;
   updated_at: string;
+  external_source?: string | null;
+  external_id?: string | null;
 }
 
 export interface Bill {
@@ -100,6 +109,7 @@ export interface Bill {
   frequency: Frequency;
   category: string | null;
   status: BillStatus;
+  document_id?: string | null;
   owner_id: string | null;
   visibility: Visibility;
   notes: string | null;
@@ -107,6 +117,22 @@ export interface Bill {
   created_at: string;
   updated_at: string;
   archived_at: string | null;
+}
+
+export type DocumentActivityAction =
+  | "uploaded"
+  | "opened"
+  | "downloaded"
+  | "replaced"
+  | "archived";
+
+export interface DocumentActivity {
+  id: string;
+  household_id: string;
+  document_id: string;
+  user_id: string;
+  action: DocumentActivityAction;
+  created_at: string;
 }
 
 export interface Subscription {
@@ -149,6 +175,8 @@ export interface Document {
   file_path: string | null;
   file_name: string | null;
   mime_type: string | null;
+  /** External preview link (e.g. Adobe Acrobat share URL). */
+  share_url: string | null;
   owner_id: string | null;
   visibility: Visibility;
   notes: string | null;
@@ -190,6 +218,28 @@ export interface Contact {
   created_at: string;
   updated_at: string;
   archived_at: string | null;
+  external_source?: string | null;
+  external_id?: string | null;
+}
+
+export interface GoogleConnection {
+  user_id: string;
+  google_email: string | null;
+  scopes: string[];
+  updated_at: string;
+  created_at: string;
+}
+
+export interface HouseholdInvite {
+  id: string;
+  household_id: string;
+  email: string;
+  token: string;
+  invited_by: string;
+  status: "pending" | "accepted" | "revoked";
+  created_at: string;
+  accepted_at: string | null;
+  accepted_by: string | null;
 }
 
 export interface Place {
@@ -318,3 +368,27 @@ export const CONTACT_CATEGORIES = [
   "Emergency",
   "Other",
 ] as const;
+
+/** Selectable currencies for money fields and household preference. */
+export const CURRENCIES = ["EUR", "INR", "USD", "QAR"] as const;
+export type CurrencyCode = (typeof CURRENCIES)[number];
+export const DEFAULT_CURRENCY: CurrencyCode = "EUR";
+
+export const CURRENCY_OPTIONS: ReadonlyArray<{
+  value: CurrencyCode;
+  label: string;
+}> = [
+  { value: "EUR", label: "EUR · Euro" },
+  { value: "INR", label: "INR · Indian Rupee" },
+  { value: "USD", label: "USD · US Dollar" },
+  { value: "QAR", label: "QAR · Qatari Riyal" },
+];
+
+export function isCurrencyCode(value: string): value is CurrencyCode {
+  return (CURRENCIES as readonly string[]).includes(value);
+}
+
+export function resolveCurrency(value?: string | null): CurrencyCode {
+  if (value && isCurrencyCode(value)) return value;
+  return DEFAULT_CURRENCY;
+}

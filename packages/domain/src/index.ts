@@ -1,5 +1,8 @@
 import { z } from "zod";
 import {
+  addMonths,
+  addWeeks,
+  addYears,
   differenceInCalendarDays,
   format,
   isBefore,
@@ -8,15 +11,20 @@ import {
   parseISO,
   startOfDay,
 } from "date-fns";
-import type {
-  AttentionItem,
-  Bill,
-  Document,
-  ImportantDate,
-  Subscription,
-  Task,
-  WeatherSnapshot,
+import {
+  CURRENCIES,
+  DEFAULT_CURRENCY,
+  type AttentionItem,
+  type Bill,
+  type Document,
+  type Frequency,
+  type ImportantDate,
+  type Subscription,
+  type Task,
+  type WeatherSnapshot,
 } from "@veedu/types";
+
+export const currencySchema = z.enum(CURRENCIES).default(DEFAULT_CURRENCY);
 
 export const visibilitySchema = z.enum(["shared", "private"]);
 export const taskPrioritySchema = z.enum(["low", "medium", "high", "urgent"]);
@@ -49,13 +57,14 @@ export const billSchema = z.object({
   name: z.string().min(1, "Name is required"),
   provider: z.string().optional().nullable(),
   amount: z.coerce.number().positive("Amount must be positive"),
-  currency: z.string().min(1).default("EUR"),
+  currency: currencySchema,
   due_date: z.string().min(1, "Due date is required"),
   frequency: frequencySchema.default("monthly"),
   category: z.string().optional().nullable(),
   status: z
     .enum(["upcoming", "due", "overdue", "paid", "scheduled"])
     .default("upcoming"),
+  document_id: z.string().uuid().optional().nullable(),
   visibility: visibilitySchema.default("shared"),
   notes: z.string().optional().nullable(),
 });
@@ -64,7 +73,7 @@ export const subscriptionSchema = z.object({
   name: z.string().min(1, "Name is required"),
   provider: z.string().optional().nullable(),
   amount: z.coerce.number().positive(),
-  currency: z.string().default("EUR"),
+  currency: currencySchema,
   billing_frequency: frequencySchema.default("monthly"),
   next_renewal: z.string().min(1),
   category: z.string().optional().nullable(),
@@ -82,6 +91,15 @@ export const documentSchema = z.object({
     .default("valid"),
   issued_at: z.string().optional().nullable(),
   expires_at: z.string().optional().nullable(),
+  share_url: z
+    .string()
+    .trim()
+    .optional()
+    .nullable()
+    .refine(
+      (v) => !v || /^https?:\/\//i.test(v),
+      "Enter a valid http(s) share link",
+    ),
   visibility: visibilitySchema.default("shared"),
   notes: z.string().optional().nullable(),
 });
@@ -149,13 +167,23 @@ export const homeServiceSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
+export const parentLocationSchema = z.object({
+  label: z.string().min(1).max(40),
+  place: z.string().min(1).max(120),
+});
+
 export const onboardingSchema = z.object({
   household_name: z.string().min(1, "Household name is required"),
   member_name: z.string().optional(),
   member_email: z.string().email().optional().or(z.literal("")),
   home_location: z.string().min(1, "Home location is required"),
+  /** @deprecated use parent_a / parent_b */
   parents_location: z.string().optional(),
-  currency: z.string().min(1).default("EUR"),
+  parent_a_label: z.string().optional(),
+  parent_a_place: z.string().optional(),
+  parent_b_label: z.string().optional(),
+  parent_b_place: z.string().optional(),
+  currency: currencySchema,
   timezone: z.string().min(1).default("Europe/Brussels"),
 });
 
@@ -165,11 +193,18 @@ export const authSchema = z.object({
   full_name: z.string().min(1).optional(),
 });
 
-export function formatMoney(amount: number, currency = "EUR"): string {
-  return new Intl.NumberFormat("en-BE", {
-    style: "currency",
-    currency,
-  }).format(amount);
+export function formatMoney(
+  amount: number,
+  currency: string = DEFAULT_CURRENCY,
+): string {
+  try {
+    return new Intl.NumberFormat("en", {
+      style: "currency",
+      currency,
+    }).format(amount);
+  } catch {
+    return `${amount.toFixed(2)} ${currency}`;
+  }
 }
 
 export function formatRelativeDue(dateStr: string): string {
@@ -181,6 +216,24 @@ export function formatRelativeDue(dateStr: string): string {
 
 export function daysUntil(dateStr: string, from = new Date()): number {
   return differenceInCalendarDays(parseISO(dateStr), startOfDay(from));
+}
+
+/** Advance a due/renewal date by frequency. Returns null for one-off items. */
+export function advanceDueDate(
+  dateStr: string,
+  frequency: Frequency,
+): string | null {
+  if (frequency === "once") return null;
+  const date = parseISO(dateStr);
+  const next =
+    frequency === "weekly"
+      ? addWeeks(date, 1)
+      : frequency === "monthly"
+        ? addMonths(date, 1)
+        : frequency === "quarterly"
+          ? addMonths(date, 3)
+          : addYears(date, 1);
+  return format(next, "yyyy-MM-dd");
 }
 
 export function documentStatusFromExpiry(

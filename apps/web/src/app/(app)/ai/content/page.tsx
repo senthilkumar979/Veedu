@@ -33,7 +33,7 @@ export default function ContentPage() {
   }
 
   return (
-    <PageContainer title="Content Generator" description="One idea → LinkedIn, Medium, Dev.to variants · Gemini when keyed, else stub">
+    <PageContainer title="Content Generator" description="One idea → LinkedIn, Medium, Dev.to variants · Gemini when keyed, else stub" backHref="/more">
       <Card className="mb-4">
         <CardContent className="flex flex-col gap-3 py-4 sm:flex-row">
           <Input className="flex-1" value={idea} onChange={(e) => setIdea(e.target.value)} label="Source idea" />

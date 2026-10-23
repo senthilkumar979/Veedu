@@ -41,9 +41,22 @@ const preset = {
           DEFAULT: "var(--color-info)",
           soft: "var(--color-info-soft)",
         },
+        accent: {
+          DEFAULT: "var(--color-accent)",
+          soft: "var(--color-accent-soft)",
+        },
       },
       fontFamily: {
         sans: ["var(--font-sans)"],
+      },
+      fontSize: {
+        xs: ["var(--text-xs)", { lineHeight: "1.4" }],
+        sm: ["var(--text-sm)", { lineHeight: "1.45" }],
+        base: ["var(--text-md)", { lineHeight: "1.5" }],
+        lg: ["var(--text-lg)", { lineHeight: "1.4" }],
+        xl: ["var(--text-xl)", { lineHeight: "1.3" }],
+        "2xl": ["var(--text-2xl)", { lineHeight: "1.25" }],
+        "3xl": ["var(--text-3xl)", { lineHeight: "1.15" }],
       },
       borderRadius: {
         sm: "var(--radius-sm)",

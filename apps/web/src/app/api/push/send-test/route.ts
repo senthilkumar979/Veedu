@@ -22,20 +22,32 @@ export async function POST(request: Request) {
   }
 
   let force = false;
+  let quietEnabled = true;
+  let startHour = 22;
+  let endHour = 7;
   try {
-    const body = (await request.json()) as { force?: boolean };
+    const body = (await request.json()) as {
+      force?: boolean;
+      quiet?: { enabled?: boolean; startHour?: number; endHour?: number };
+    };
     force = Boolean(body.force);
+    if (body.quiet) {
+      quietEnabled = body.quiet.enabled !== false;
+      if (typeof body.quiet.startHour === "number")
+        startHour = body.quiet.startHour;
+      if (typeof body.quiet.endHour === "number") endHour = body.quiet.endHour;
+    }
   } catch {
     // empty body is fine
   }
 
-  if (isQuietHours() && !force) {
+  if (quietEnabled && isQuietHours(new Date(), startHour, endHour) && !force) {
     return NextResponse.json(
       {
         ok: false,
         skipped: true,
         reason: "quiet_hours",
-        message: "Quiet hours (22:00–07:00). Pass { force: true } to override.",
+        message: `Quiet hours (${String(startHour).padStart(2, "0")}:00–${String(endHour).padStart(2, "0")}:00). Pass { force: true } to override.`,
       },
       { status: 200 },
     );
@@ -76,6 +88,5 @@ export async function POST(request: Request) {
     ok: sent > 0,
     sent,
     failed,
-    mode: user.mode,
   });
 }

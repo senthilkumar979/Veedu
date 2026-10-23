@@ -23,7 +23,7 @@ export async function POST(request: Request) {
 
   try {
     await deletePushSubscription(user.id, body.endpoint);
-    return NextResponse.json({ ok: true, mode: user.mode });
+    return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Unsubscribe failed" },

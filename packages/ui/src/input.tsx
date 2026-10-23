@@ -20,7 +20,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={cn(
-            "h-10 w-full rounded-md border border-border bg-surface px-3 text-ink placeholder:text-subtle transition-colors duration-fast",
+            "h-12 w-full rounded-md border border-border bg-surface px-3 text-ink placeholder:text-subtle transition-colors duration-fast",
             "hover:border-border-strong focus:border-primary",
             error && "border-danger",
             className,

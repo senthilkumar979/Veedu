@@ -4,6 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { Badge, Button } from "@veedu/ui";
 import { createSupabaseClient, hasSupabaseEnv } from "@veedu/api";
 import { urlBase64ToUint8Array } from "@/lib/push/encoding";
+import {
+  DEFAULT_QUIET_PREFS,
+  loadQuietPrefs,
+  saveQuietPrefs,
+  type QuietPrefs,
+} from "@/lib/push/quiet-prefs";
 
 type Status =
   | "idle"
@@ -17,10 +23,7 @@ async function authHeaders(): Promise<HeadersInit> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
-  if (!hasSupabaseEnv()) {
-    headers["x-veedu-demo-user"] = "demo";
-    return headers;
-  }
+  if (!hasSupabaseEnv()) return headers;
   const client = createSupabaseClient();
   if (client) {
     const { data } = await client.auth.getSession();
@@ -35,6 +38,11 @@ export function PushNotificationsPanel() {
   const [status, setStatus] = useState<Status>("loading");
   const [message, setMessage] = useState<string>("");
   const [vapidReady, setVapidReady] = useState(false);
+  const [quiet, setQuiet] = useState<QuietPrefs>(DEFAULT_QUIET_PREFS);
+
+  useEffect(() => {
+    setQuiet(loadQuietPrefs());
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -141,10 +149,11 @@ export function PushNotificationsPanel() {
     setMessage("");
     try {
       const headers = await authHeaders();
+      const prefs = loadQuietPrefs();
       const res = await fetch("/api/push/send-test", {
         method: "POST",
         headers,
-        body: JSON.stringify({ force: true }),
+        body: JSON.stringify({ force: false, quiet: prefs }),
       });
       const json = (await res.json()) as {
         ok?: boolean;
@@ -198,7 +207,19 @@ export function PushNotificationsPanel() {
         Bill reminders · Document expiry · Important dates · Task reminders ·
         Subscription renewals · Daily briefing
       </p>
-      <p className="text-xs">Quiet hours: 22:00 – 07:00 (best-effort)</p>
+      <label className="flex items-center gap-2 text-xs">
+        <input
+          type="checkbox"
+          checked={quiet.enabled}
+          onChange={(e) => {
+            const next = { ...quiet, enabled: e.target.checked };
+            setQuiet(next);
+            saveQuietPrefs(next);
+          }}
+        />
+        Quiet hours {String(quiet.startHour).padStart(2, "0")}:00–
+        {String(quiet.endHour).padStart(2, "0")}:00 (local)
+      </label>
       <div className="flex flex-wrap gap-2">
         {status === "enabled" ? (
           <>

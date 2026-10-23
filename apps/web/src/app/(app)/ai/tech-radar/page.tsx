@@ -33,7 +33,7 @@ export default function TechRadarPage() {
   }, []);
 
   return (
-    <PageContainer title="Personal Tech Radar" description="Optional intelligence module · React, Next.js, architecture, career">
+    <PageContainer title="Personal Tech Radar" description="Optional intelligence module · React, Next.js, architecture, career" backHref="/more">
       <Card>
         <CardHeader>
           <CardTitle>Today&apos;s tech radar</CardTitle>

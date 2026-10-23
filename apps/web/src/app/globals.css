@@ -22,3 +22,22 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+@keyframes dash-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-dash-in {
+  animation: dash-in 480ms var(--transition-slow) both;
+}
+
+.animate-dash-in-delay {
+  animation: dash-in 560ms var(--transition-slow) 80ms both;
+}

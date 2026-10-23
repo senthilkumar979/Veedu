@@ -1,80 +1,97 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Dialog, DialogContent, DialogHeader, DialogTitle, Input, Select } from "@veedu/ui";
-import { subscriptionSchema, formatMoney, formatRelativeDue, daysUntil } from "@veedu/domain";
+import { Suspense } from "react";
+import { Button } from "@veedu/ui";
+import { formatMoney } from "@veedu/domain";
 import { PageContainer } from "@/components/layout/page-container";
 import { EmptyState, ErrorState, LoadingBlock } from "@/components/shared/states";
-import { useHouseholdData } from "@/lib/data";
-
-type Values = z.infer<typeof subscriptionSchema>;
+import { SubscriptionCard } from "@/components/subscriptions/subscription-card";
+import { SubscriptionFormDialog } from "@/components/subscriptions/subscription-form-dialog";
+import { useSubscriptionsPage } from "@/components/subscriptions/use-subscriptions-page";
 
 function SubsInner() {
-  const search = useSearchParams();
-  const { subscriptions, addSubscription } = useHouseholdData();
-  const [open, setOpen] = useState(search.get("new") === "1");
-  const form = useForm<Values>({
-    resolver: zodResolver(subscriptionSchema),
-    defaultValues: { name: "", provider: "", amount: 0, currency: "EUR", billing_frequency: "monthly", next_renewal: "", category: "Entertainment", status: "active", visibility: "shared", payment_reference: "", notes: "" },
-  });
+  const page = useSubscriptionsPage();
 
-  const renewingSoon = useMemo(
-    () => (subscriptions.data ?? []).filter((s) => s.status === "active" && daysUntil(s.next_renewal) <= 45).sort((a, b) => a.next_renewal.localeCompare(b.next_renewal)),
-    [subscriptions.data],
-  );
-
-  if (subscriptions.isLoading) return <PageContainer title="Subscriptions"><LoadingBlock /></PageContainer>;
-  if (subscriptions.isError) return <PageContainer title="Subscriptions"><ErrorState onRetry={() => void subscriptions.refetch()} /></PageContainer>;
+  if (page.subscriptions.isLoading)
+    return (
+      <PageContainer title="Subscriptions">
+        <LoadingBlock />
+      </PageContainer>
+    );
+  if (page.subscriptions.isError)
+    return (
+      <PageContainer title="Subscriptions">
+        <ErrorState onRetry={() => void page.subscriptions.refetch()} />
+      </PageContainer>
+    );
 
   return (
-    <PageContainer title="Subscriptions" description="Recurring services and renewals" actions={<Button onClick={() => setOpen(true)}>Add subscription</Button>}>
-      <Card className="mb-4">
-        <CardHeader><CardTitle>Renewing soon</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          {renewingSoon.length === 0 ? <p className="text-sm text-muted">No renewals in the next 45 days.</p> : renewingSoon.map((s) => (
-            <div key={s.id} className="flex items-center justify-between text-sm">
-              <span className="font-medium text-ink">{s.name}</span>
-              <span className="text-muted">{daysUntil(s.next_renewal)} days</span>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-      {(subscriptions.data ?? []).length === 0 ? (
-        <EmptyState title="No subscriptions" actionLabel="Add subscription" onAction={() => setOpen(true)} />
+    <PageContainer className="gap-0">
+      <section className="mb-5 overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary to-[#2c4a3c] px-5 py-6 text-white shadow-card sm:px-7">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/70">
+              Recurring
+            </p>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+              Subscriptions
+            </h1>
+            <p className="mt-2 text-sm text-white/80">
+              ~{formatMoney(page.monthlyTotal, page.preferredCurrency)}/mo
+              across {page.list.length} services
+            </p>
+          </div>
+          <Button
+            className="border-0 bg-white text-primary hover:bg-accent-soft"
+            onClick={page.openCreate}
+          >
+            Add subscription
+          </Button>
+        </div>
+      </section>
+
+      {page.list.length === 0 ? (
+        <EmptyState
+          title="No subscriptions"
+          actionLabel="Add subscription"
+          onAction={page.openCreate}
+        />
       ) : (
-        <ul className="space-y-2">
-          {(subscriptions.data ?? []).map((s) => (
-            <li key={s.id}><Card><CardContent className="flex items-center justify-between gap-3 py-4">
-              <div>
-                <p className="text-sm font-medium text-ink">{s.name}</p>
-                <p className="text-xs text-muted">{formatMoney(s.amount, s.currency)} / {s.billing_frequency} · Next {formatRelativeDue(s.next_renewal)}</p>
-              </div>
-              <Badge tone={s.status === "active" ? "success" : "neutral"}>{s.status}</Badge>
-            </CardContent></Card></li>
+        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {page.list.map((s) => (
+            <SubscriptionCard
+              key={s.id}
+              subscription={s}
+              onEdit={page.openEdit}
+              onArchive={(id) => void page.archiveSubscription.mutateAsync(id)}
+            />
           ))}
         </ul>
       )}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Add subscription</DialogTitle></DialogHeader>
-          <form className="space-y-3" onSubmit={form.handleSubmit(async (values) => { await addSubscription.mutateAsync(values); setOpen(false); form.reset(); })}>
-            <Input label="Name" {...form.register("name")} />
-            <Input label="Provider" {...form.register("provider")} />
-            <Input label="Amount" type="number" step="0.01" {...form.register("amount")} />
-            <Input label="Next renewal" type="date" {...form.register("next_renewal")} />
-            <Select label="Billing frequency" value={form.watch("billing_frequency")} onValueChange={(v) => form.setValue("billing_frequency", v as Values["billing_frequency"])} options={[{value:"monthly",label:"Monthly"},{value:"yearly",label:"Yearly"},{value:"quarterly",label:"Quarterly"}]} />
-            <Button type="submit" className="w-full">Save</Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+
+      <SubscriptionFormDialog
+        open={page.open}
+        editing={Boolean(page.editing)}
+        form={page.form}
+        onOpenChange={(next) => {
+          if (!next) page.closeForm();
+        }}
+        onSubmit={page.submitForm}
+      />
     </PageContainer>
   );
 }
 
 export default function SubscriptionsPage() {
-  return <Suspense fallback={<PageContainer title="Subscriptions"><LoadingBlock /></PageContainer>}><SubsInner /></Suspense>;
+  return (
+    <Suspense
+      fallback={
+        <PageContainer title="Subscriptions">
+          <LoadingBlock />
+        </PageContainer>
+      }
+    >
+      <SubsInner />
+    </Suspense>
+  );
 }

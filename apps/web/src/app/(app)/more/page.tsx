@@ -4,12 +4,30 @@ import Link from "next/link";
 import { Card, CardContent } from "@veedu/ui";
 import { PageContainer } from "@/components/layout/page-container";
 import {
-  Bot, Contact, CreditCard, Home, MapPin, Receipt, Settings, Star, Wallet, Radar, PenLine,
+  Activity,
+  Banknote,
+  Bot,
+  CalendarClock,
+  Contact,
+  CreditCard,
+  Home,
+  MapPin,
+  Receipt,
+  Settings,
+  Star,
+  Users,
+  Wallet,
+  Radar,
+  PenLine,
 } from "lucide-react";
 
 const links = [
+  { href: "/payments", label: "Payments", icon: Banknote },
+  { href: "/due-dates", label: "Due dates", icon: CalendarClock },
   { href: "/bills", label: "Bills", icon: Receipt },
   { href: "/subscriptions", label: "Subscriptions", icon: CreditCard },
+  { href: "/activity", label: "Activity log", icon: Activity },
+  { href: "/family", label: "Family", icon: Users },
   { href: "/accounts", label: "Accounts", icon: Wallet },
   { href: "/contacts", label: "Contacts", icon: Contact },
   { href: "/places", label: "Places", icon: MapPin },
@@ -23,7 +41,7 @@ const links = [
 
 export default function MorePage() {
   return (
-    <PageContainer title="More" description="Everything else in Veedu">
+    <PageContainer title="More" description="Everything else in the household">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {links.map((l) => {
           const Icon = l.icon;

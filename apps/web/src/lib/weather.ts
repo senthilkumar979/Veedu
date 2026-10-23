@@ -1,6 +1,5 @@
-import type { WeatherSnapshot } from "@veedu/types";
+import type { ParentLocation, WeatherSnapshot } from "@veedu/types";
 
-/** WMO Weather interpretation codes → short English labels. */
 const WMO_CONDITIONS: Record<number, string> = {
   0: "Clear",
   1: "Mainly clear",
@@ -25,35 +24,21 @@ const WMO_CONDITIONS: Record<number, string> = {
   99: "Thunderstorm with hail",
 };
 
-export interface GeoCoords {
-  latitude: number;
-  longitude: number;
-  label: string;
-}
-
 export interface WeatherResult {
   snapshot: WeatherSnapshot | null;
   error?: string;
   source: "open-meteo" | "empty";
+  label?: string;
 }
 
-/**
- * Resolve a place name (city / region string from onboarding/settings) to
- * coordinates via the Open-Meteo Geocoding API (no API key).
- * Uses the first match; falls back to null when the name cannot be resolved.
- */
-export async function geocodePlace(
-  place: string,
-): Promise<GeoCoords | null> {
+export async function geocodePlace(place: string) {
   const name = place.trim();
   if (!name) return null;
-
   const url = new URL("https://geocoding-api.open-meteo.com/v1/search");
   url.searchParams.set("name", name);
   url.searchParams.set("count", "1");
   url.searchParams.set("language", "en");
   url.searchParams.set("format", "json");
-
   const res = await fetch(url.toString(), { next: { revalidate: 86400 } });
   if (!res.ok) return null;
   const data = (await res.json()) as {
@@ -67,7 +52,6 @@ export async function geocodePlace(
   };
   const hit = data.results?.[0];
   if (!hit) return null;
-
   const parts = [hit.name, hit.admin1, hit.country].filter(Boolean);
   return {
     latitude: hit.latitude,
@@ -89,11 +73,8 @@ export async function fetchForecast(
     "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code",
   );
   url.searchParams.set("timezone", "auto");
-
   const res = await fetch(url.toString(), { next: { revalidate: 1800 } });
-  if (!res.ok) {
-    throw new Error(`Open-Meteo forecast failed (${res.status})`);
-  }
+  if (!res.ok) throw new Error(`Open-Meteo forecast failed (${res.status})`);
   const data = (await res.json()) as {
     current?: {
       temperature_2m?: number;
@@ -106,26 +87,24 @@ export async function fetchForecast(
   if (!current || current.temperature_2m == null) {
     throw new Error("Open-Meteo returned no current weather");
   }
-
   const code = current.weather_code ?? 0;
   return {
     location_label: locationLabel,
     temperature_c: Math.round(current.temperature_2m),
-    feels_like_c: Math.round(current.apparent_temperature ?? current.temperature_2m),
+    feels_like_c: Math.round(
+      current.apparent_temperature ?? current.temperature_2m,
+    ),
     humidity: Math.round(current.relative_humidity_2m ?? 0),
     condition: WMO_CONDITIONS[code] ?? `Code ${code}`,
   };
 }
 
-/**
- * Fetch weather for a city/place string: geocode lightly, then forecast.
- * Returns a graceful empty result when the place is missing or unresolved.
- */
 export async function weatherForPlace(
   place: string | null | undefined,
+  label?: string,
 ): Promise<WeatherResult> {
   if (!place?.trim()) {
-    return { snapshot: null, error: "No location set", source: "empty" };
+    return { snapshot: null, error: "No location set", source: "empty", label };
   }
   try {
     const geo = await geocodePlace(place);
@@ -134,30 +113,29 @@ export async function weatherForPlace(
         snapshot: null,
         error: `Could not geocode “${place.trim()}”`,
         source: "empty",
+        label,
       };
     }
-    const snapshot = await fetchForecast(
-      geo.latitude,
-      geo.longitude,
-      geo.label,
-    );
-    return { snapshot, source: "open-meteo" };
+    const snapshot = await fetchForecast(geo.latitude, geo.longitude, geo.label);
+    return { snapshot, source: "open-meteo", label };
   } catch (err) {
     return {
       snapshot: null,
       error: err instanceof Error ? err.message : "Weather unavailable",
       source: "empty",
+      label,
     };
   }
 }
 
 export async function weatherForLocations(input: {
   home?: string | null;
-  parents?: string | null;
-}): Promise<{ home: WeatherResult; parents: WeatherResult }> {
-  const [home, parents] = await Promise.all([
-    weatherForPlace(input.home),
-    weatherForPlace(input.parents),
+  parents?: ParentLocation[];
+}): Promise<{ home: WeatherResult; parents: WeatherResult[] }> {
+  const parentRows = (input.parents ?? []).slice(0, 2);
+  const [home, ...parents] = await Promise.all([
+    weatherForPlace(input.home, "Home"),
+    ...parentRows.map((p) => weatherForPlace(p.place, p.label)),
   ]);
   return { home, parents };
 }

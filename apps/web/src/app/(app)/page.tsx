@@ -1,98 +1,38 @@
 "use client";
 
 import { useMemo } from "react";
-import Link from "next/link";
-import { format } from "date-fns";
-import {
-  Badge,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@veedu/ui";
+import { addDays, format, parseISO } from "date-fns";
 import {
   buildAttentionItems,
-  formatMoney,
-  formatRelativeDue,
   greetingForHour,
   taskProgress,
 } from "@veedu/domain";
-import type { WeatherSnapshot } from "@veedu/types";
 import { PageContainer } from "@/components/layout/page-container";
-import { EmptyState, ErrorState, LoadingBlock } from "@/components/shared/states";
+import { ErrorState, LoadingBlock } from "@/components/shared/states";
+import { CalendarAgenda } from "@/components/dashboard/calendar-agenda";
+import { WeatherHero } from "@/components/dashboard/weather-hero";
+import {
+  AttentionPanel,
+  DocumentsPanel,
+  PaymentsPanel,
+} from "@/components/dashboard/household-panels";
+import { TasksPanel } from "@/components/dashboard/panels";
+import { useGoogleSyncOnLoad } from "@/hooks/use-google-sync-on-load";
 import { useWeather } from "@/hooks/use-weather";
 import { useAuth } from "@/lib/auth";
 import { useHouseholdData } from "@/lib/data";
-
-function WeatherTile({
-  label,
-  snapshot,
-  error,
-  isLoading,
-}: {
-  label: string;
-  snapshot: WeatherSnapshot | null | undefined;
-  error?: string;
-  isLoading?: boolean;
-}) {
-  if (isLoading) {
-    return (
-      <div className="rounded-lg bg-surface-subtle p-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
-          {label}
-        </p>
-        <p className="mt-2 text-sm text-muted">Loading…</p>
-      </div>
-    );
-  }
-  if (!snapshot) {
-    return (
-      <div className="rounded-lg bg-surface-subtle p-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
-          {label}
-        </p>
-        <p className="mt-2 text-sm text-muted">
-          {error || "Set a location in onboarding/settings"}
-        </p>
-      </div>
-    );
-  }
-  return (
-    <div className="rounded-lg bg-surface-subtle p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
-        {label}
-      </p>
-      <p className="mt-1 text-2xl font-semibold text-ink">
-        {snapshot.temperature_c}°
-      </p>
-      <p className="text-sm text-muted">{snapshot.condition}</p>
-      <p className="text-xs text-subtle">
-        Feels like {snapshot.feels_like_c}° · {snapshot.location_label}
-      </p>
-    </div>
-  );
-}
+import { resolveParentLocations } from "@/lib/household/parent-locations";
 
 export default function DashboardPage() {
   const { profile, household } = useAuth();
-  const {
-    tasks,
-    events,
-    bills,
-    subscriptions,
-    documents,
-    importantDates,
-  } = useHouseholdData();
-  const weatherQuery = useWeather(
-    household?.home_location,
-    household?.parents_location,
-  );
+  const { tasks, events, bills, subscriptions, documents, importantDates } =
+    useHouseholdData();
+  const parentPlaces = resolveParentLocations(household);
+  const weatherQuery = useWeather(household?.home_location, parentPlaces);
+  const googleSync = useGoogleSyncOnLoad();
 
   const loading =
-    tasks.isLoading ||
-    events.isLoading ||
-    bills.isLoading ||
-    documents.isLoading;
+    tasks.isLoading || events.isLoading || bills.isLoading || documents.isLoading;
   const error =
     tasks.isError || events.isError || bills.isError || documents.isError;
 
@@ -104,32 +44,47 @@ export default function DashboardPage() {
         tasks: tasks.data ?? [],
         subscriptions: subscriptions.data ?? [],
         importantDates: importantDates.data ?? [],
-      }),
+      }).slice(0, 4),
     [documents.data, bills.data, tasks.data, subscriptions.data, importantDates.data],
   );
 
-  const todayEvents = useMemo(() => {
-    const day = format(new Date(), "yyyy-MM-dd");
+  const upcomingEvents = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = addDays(start, 14);
     return (events.data ?? [])
-      .filter((e) => e.start_at.startsWith(day) || format(new Date(e.start_at), "yyyy-MM-dd") === day)
-      .sort((a, b) => a.start_at.localeCompare(b.start_at));
+      .filter((event) => {
+        const at = parseISO(event.start_at);
+        return at >= start && at < end;
+      })
+      .sort((a, b) => a.start_at.localeCompare(b.start_at))
+      .slice(0, 12);
   }, [events.data]);
 
   const progress = taskProgress(tasks.data ?? []);
   const openTasks = (tasks.data ?? [])
-    .filter((t) => t.status !== "done" && t.status !== "cancelled")
+    .filter((task) => task.status !== "done" && task.status !== "cancelled")
     .slice(0, 5);
-  const upcomingPayments = [...(bills.data ?? []), ...(subscriptions.data ?? []).map((s) => ({
-    id: s.id,
-    name: s.name,
-    amount: s.amount,
-    currency: s.currency,
-    due_date: s.next_renewal,
-  }))].sort((a, b) => a.due_date.localeCompare(b.due_date)).slice(0, 4);
+  const upcomingPayments = [
+    ...(bills.data ?? []),
+    ...(subscriptions.data ?? []).map((item) => ({
+      id: item.id,
+      name: item.name,
+      amount: item.amount,
+      currency: item.currency,
+      due_date: item.next_renewal,
+    })),
+  ]
+    .sort((a, b) => a.due_date.localeCompare(b.due_date))
+    .slice(0, 4);
 
-  const greeting = greetingForHour(
-    new Date().getHours(),
-    profile?.full_name ?? "there",
+  const homeError = weatherQuery.isError
+    ? "Weather unavailable"
+    : weatherQuery.data?.home.error;
+  const parentWeather = (weatherQuery.data?.parents ?? []).map((row) =>
+    weatherQuery.isError
+      ? { ...row, error: "Weather unavailable" }
+      : row,
   );
 
   if (loading) {
@@ -157,197 +112,36 @@ export default function DashboardPage() {
   }
 
   return (
-    <PageContainer
-      title={greeting}
-      description={`Everything important in one view · ${format(new Date(), "EEEE, d MMMM yyyy")}`}
-    >
-      {attention.length > 0 ? (
-        <Card className="mb-4 border-warning/30 bg-warning-soft/40">
-          <CardHeader>
-            <CardTitle>Attention</CardTitle>
-            <Badge tone="warning">
-              {attention.length} item{attention.length === 1 ? "" : "s"} need
-              your attention
-            </Badge>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {attention.slice(0, 4).map((item) => (
-              <Link
-                key={item.id}
-                href={item.href}
-                className="flex items-center justify-between gap-3 rounded-md px-2 py-2 hover:bg-surface"
-              >
-                <div>
-                  <p className="text-sm font-medium text-ink">{item.title}</p>
-                  <p className="text-xs text-muted">{item.detail}</p>
-                </div>
-                <Badge
-                  tone={
-                    item.priority === "critical" || item.priority === "high"
-                      ? "danger"
-                      : "neutral"
-                  }
-                >
-                  {item.priority}
-                </Badge>
-              </Link>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
+    <PageContainer className="min-h-0 flex-1 lg:overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 lg:overflow-hidden">
+        <WeatherHero
+          greeting={greetingForHour(
+            new Date().getHours(),
+            profile?.full_name ?? "there",
+          )}
+          householdName={household?.name ?? "Household"}
+          dateLabel={format(new Date(), "EEEE, d MMMM yyyy")}
+          home={weatherQuery.data?.home.snapshot}
+          homeError={homeError}
+          parents={parentWeather}
+          isLoading={weatherQuery.isLoading}
+        />
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Weather</CardTitle>
-            <span className="text-xs text-subtle">Open-Meteo</span>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-3">
-            <WeatherTile
-              label="Home"
-              snapshot={weatherQuery.data?.home.snapshot}
-              error={
-                weatherQuery.isError
-                  ? "Weather unavailable"
-                  : weatherQuery.data?.home.error
-              }
-              isLoading={weatherQuery.isLoading}
-            />
-            <WeatherTile
-              label="Parents"
-              snapshot={weatherQuery.data?.parents.snapshot}
-              error={
-                weatherQuery.isError
-                  ? "Weather unavailable"
-                  : weatherQuery.data?.parents.error
-              }
-              isLoading={weatherQuery.isLoading}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Today</CardTitle>
-            <Link href="/calendar" className="text-sm text-primary">
-              Agenda
-            </Link>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {todayEvents.length === 0 ? (
-              <p className="text-sm text-muted">No events scheduled today.</p>
-            ) : (
-              todayEvents.map((e) => (
-                <div key={e.id} className="flex gap-3 text-sm">
-                  <span className="w-12 shrink-0 font-medium text-muted">
-                    {format(new Date(e.start_at), "HH:mm")}
-                  </span>
-                  <span className="text-ink">{e.title}</span>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Tasks</CardTitle>
-            <Badge tone="primary">{progress.open} open</Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-3 flex items-center justify-between text-sm">
-              <span className="text-muted">
-                {progress.overdue > 0
-                  ? `${progress.overdue} overdue`
-                  : "On track"}
-              </span>
-              <span className="font-medium text-ink">{progress.percent}%</span>
-            </div>
-            <div className="mb-4 h-2 overflow-hidden rounded-pill bg-surface-subtle">
-              <div
-                className="h-full rounded-pill bg-primary transition-all duration-slow"
-                style={{ width: `${progress.percent}%` }}
-              />
-            </div>
-            <ul className="space-y-2">
-              {openTasks.map((t) => (
-                <li key={t.id} className="flex items-start justify-between gap-2 text-sm">
-                  <span className="text-ink">{t.title}</span>
-                  <span className="shrink-0 text-xs text-muted">
-                    {t.due_date ? formatRelativeDue(t.due_date) : "No due"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <Link href="/tasks" className="mt-3 inline-block text-sm text-primary">
-              View all tasks
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Upcoming payments</CardTitle>
-            <Link href="/bills" className="text-sm text-primary">
-              Bills
-            </Link>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {upcomingPayments.length === 0 ? (
-              <EmptyState title="No upcoming payments" description="You're all caught up." />
-            ) : (
-              upcomingPayments.map((p) => (
-                <div key={p.id} className="flex items-center justify-between text-sm">
-                  <div>
-                    <p className="font-medium text-ink">{p.name}</p>
-                    <p className="text-xs text-muted">
-                      {formatRelativeDue(p.due_date)}
-                    </p>
-                  </div>
-                  <p className="font-medium text-ink">
-                    {formatMoney(p.amount, p.currency)}
-                  </p>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+        <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-12 lg:overflow-hidden">
+          <CalendarAgenda
+            className="lg:col-span-7 lg:min-h-0"
+            events={upcomingEvents}
+            isSyncing={googleSync.isSyncing}
+            calendarsSynced={googleSync.calendarsSynced}
+          />
+          <div className="flex min-h-0 flex-col gap-3 lg:col-span-5 lg:overflow-y-auto">
+            <TasksPanel tasks={openTasks} progress={progress} />
+            <PaymentsPanel payments={upcomingPayments} />
+            <DocumentsPanel documents={(documents.data ?? []).slice(0, 3)} />
+            <AttentionPanel items={attention} />
+          </div>
+        </div>
       </div>
-
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle>Documents</CardTitle>
-          <Link href="/documents" className="text-sm text-primary">
-            Vault
-          </Link>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-3">
-          {(documents.data ?? []).slice(0, 3).map((d) => (
-            <Link
-              key={d.id}
-              href={`/documents/${d.id}`}
-              className="rounded-lg border border-border p-3 hover:bg-surface-hover"
-            >
-              <p className="text-sm font-medium text-ink">{d.title}</p>
-              <p className="mt-1 text-xs text-muted">
-                {d.expires_at
-                  ? `Expires ${formatRelativeDue(d.expires_at)}`
-                  : "No expiry"}
-              </p>
-              <Badge
-                className="mt-2"
-                tone={
-                  d.status === "expired" || d.status === "expiring_soon"
-                    ? "warning"
-                    : "success"
-                }
-              >
-                {d.status.replace("_", " ")}
-              </Badge>
-            </Link>
-          ))}
-        </CardContent>
-      </Card>
     </PageContainer>
   );
 }

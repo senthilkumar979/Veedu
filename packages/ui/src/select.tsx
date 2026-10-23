@@ -38,7 +38,7 @@ export function Select({
       >
         <SelectPrimitive.Trigger
           className={cn(
-            "flex h-10 w-full items-center justify-between rounded-md border border-border bg-surface px-3 text-left text-ink",
+            "flex h-12 w-full items-center justify-between rounded-md border border-border bg-surface px-3 text-left text-ink",
             error && "border-danger",
           )}
         >
@@ -58,7 +58,7 @@ export function Select({
                 <SelectPrimitive.Item
                   key={opt.value}
                   value={opt.value}
-                  className="relative flex cursor-pointer items-center rounded-md px-8 py-2 text-sm outline-none data-[highlighted]:bg-surface-hover"
+                  className="relative flex min-h-12 cursor-pointer items-center rounded-md px-8 text-sm outline-none data-[highlighted]:bg-primary-soft"
                 >
                   <SelectPrimitive.ItemIndicator className="absolute left-2">
                     <Check className="h-4 w-4 text-primary" />

@@ -16,7 +16,7 @@ apps/desktop      Tauri 2 shell (loads shared web UI)
 packages/ui       Design tokens + primitives
 packages/domain   Zod schemas + business helpers
 packages/types    Shared TypeScript types
-packages/api      Supabase client + demo data store
+packages/api      Supabase client helpers
 packages/config   Shared TS/Tailwind config
 supabase/migrations  SQL schema + RLS (incl. push_subscriptions)
 ```
@@ -25,11 +25,15 @@ supabase/migrations  SQL schema + RLS (incl. push_subscriptions)
 
 ```bash
 pnpm install
-cp .env.example apps/web/.env.local   # optional — without Supabase keys, demo mode is used
+cp apps/web/.env.example apps/web/.env.local   # fill in Supabase keys (required)
 pnpm --filter @veedu/web dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and choose **Continue with demo household** (or sign in).
+Open [http://localhost:3000](http://localhost:3000).
+
+- **Required:** `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Without them, login/signup are disabled.
+- **Email confirm:** for local/dev smoke tests, keep `auth.email.enable_confirmations = false` in `supabase/config.toml` and run `supabase config push` (or turn off Confirm email in the Dashboard). Otherwise signup returns no session until the email link is clicked.
+- **Smoke path:** Create account → finish onboarding → add a task → refresh (row should persist) → Settings shows Live Supabase.
 
 ### Scripts
 
@@ -43,11 +47,10 @@ Open [http://localhost:3000](http://localhost:3000) and choose **Continue with d
 
 ## Environment
 
-See [.env.example](./.env.example).
+See [apps/web/.env.example](./apps/web/.env.example).
 
-- If `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set, the app uses the real Supabase client (Auth + persistence).
-- If absent, the same hooks serve an in-memory **demo store** (including an in-memory push subscription store).
-- Apply SQL from `supabase/migrations/` in your Supabase project (tables + RLS + storage + `push_subscriptions`).
+- `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are required. Legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY` is still accepted as a fallback.
+- Apply SQL from `supabase/migrations/` in your Supabase project (tables + RLS + storage + `push_subscriptions`), in filename order. Create a dedicated Veedu project in the Supabase Dashboard, then run migrations via the SQL editor or `supabase db push` after linking.
 
 ### Weather (Open-Meteo)
 
@@ -67,15 +70,22 @@ Set:
 - `VAPID_PRIVATE_KEY`
 - `VAPID_SUBJECT` (e.g. `mailto:you@example.com`)
 
-Service worker (`apps/web/public/sw.js`) handles `push` + `notificationclick`. Settings → Notifications can enable/disable and send a test. Quiet hours **22:00–07:00** are respected best-effort on send-test (pass `{ force: true }` to override). Live persistence uses `push_subscriptions` + RLS; demo mode keeps subscriptions in memory.
+Service worker (`apps/web/public/sw.js`) handles `push` + `notificationclick`. Settings → Notifications can enable/disable and send a test. Quiet hours **22:00–07:00** are respected best-effort on send-test (pass `{ force: true }` to override). Persistence uses `push_subscriptions` + RLS.
 
 ### AI (Gemini)
 
 Set `GEMINI_API_KEY` for live Household Assistant, Tech Radar, and Content Generator. Without the key, modules stay in stub mode. Optional: `GEMINI_MODEL` (default `gemini-2.0-flash`).
 
-### Planned (not implemented)
+### Google Calendar & Contacts
 
-Google Calendar and Google Contacts — planned later; not wired in this repo yet.
+1. Create a Google Cloud OAuth **Web** client; enable Calendar API + People API.
+2. Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, and `NEXT_PUBLIC_APP_URL`.
+3. Redirect URI: `{NEXT_PUBLIC_APP_URL}/api/google/callback`
+4. In Settings → Integrations, **Connect Google**, then **Sync now** (imports as private rows).
+
+### Ops
+
+See [docs/DEPLOY.md](./docs/DEPLOY.md) for Vercel env, Supabase SMTP/CORS, and production checklist.
 
 ## Major routes
 
@@ -85,14 +95,19 @@ Google Calendar and Google Contacts — planned later; not wired in this repo ye
 | `/tasks` | Tasks with filters + CRUD |
 | `/calendar` | Agenda / Week / Month |
 | `/important-dates` | Categories + CRUD |
-| `/bills` | Bills + monthly summary |
+| `/payments` | Upcoming/overdue payments · mark paid rolls due |
+| `/due-dates` | Unified renewals, expiries, payment deadlines |
+| `/bills` | Bills + monthly summary · optional document link |
 | `/subscriptions` | Subscriptions + renewing soon |
 | `/documents`, `/documents/[id]` | Vault + viewer |
+| `/activity` | Document activity log |
+| `/family` | Family members + invites |
 | `/accounts` | Reference accounts (no secrets) |
 | `/contacts` | Contact directory |
 | `/places` | Saved places |
 | `/home` | Inventory + maintenance |
-| `/settings` | Household settings + web push |
+| `/settings` | Household, invites, Google sync, web push |
+| `/invite/[token]` | Accept household invite |
 | `/ai/assistant` | Household Assistant (Gemini or stub) |
 | `/ai/tech-radar` | Personal Tech Radar |
 | `/ai/content` | Content Generator |

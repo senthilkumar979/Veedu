@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       endpoint: body.endpoint,
       keys: { p256dh: body.keys.p256dh, auth: body.keys.auth },
     });
-    return NextResponse.json({ ok: true, id: record.id, mode: user.mode });
+    return NextResponse.json({ ok: true, id: record.id });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Subscribe failed" },

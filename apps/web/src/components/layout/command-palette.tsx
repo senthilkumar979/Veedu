@@ -31,6 +31,8 @@ const commands = [
   { label: "Add contact", href: "/contacts?new=1", icon: Contact },
   { label: "Add account", href: "/accounts?new=1", icon: Wallet },
   { label: "Open calendar", href: "/calendar", icon: CalendarDays },
+  { label: "Open payments", href: "/payments", icon: Receipt },
+  { label: "Open due dates", href: "/due-dates", icon: CalendarDays },
   { label: "Ask household assistant", href: "/ai/assistant", icon: Bot },
 ];
 

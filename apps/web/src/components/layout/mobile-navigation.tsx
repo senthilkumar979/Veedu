@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   CalendarDays,
   CheckSquare,
-  FileText,
+  Contact,
   LayoutDashboard,
   MoreHorizontal,
 } from "lucide-react";
@@ -15,7 +15,7 @@ const items = [
   { href: "/", label: "Home", icon: LayoutDashboard },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
-  { href: "/documents", label: "Documents", icon: FileText },
+  { href: "/contacts", label: "Contacts", icon: Contact },
   { href: "/more", label: "More", icon: MoreHorizontal },
 ];
 
@@ -24,7 +24,7 @@ export function MobileNavigation() {
 
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-surface/95 backdrop-blur md:hidden"
+      className="fixed bottom-0 inset-x-0 z-40 border-t border-border/80 bg-surface/95 backdrop-blur-md md:hidden"
       aria-label="Mobile"
     >
       <ul className="mx-auto flex max-w-lg items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom)]">
@@ -39,11 +39,17 @@ export function MobileNavigation() {
               <Link
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center gap-1 py-2 text-[11px] font-medium",
+                  "relative flex min-h-14 flex-col items-center justify-center gap-1 py-1.5 text-[0.7rem] font-medium transition-colors",
                   active ? "text-primary" : "text-muted",
                 )}
               >
-                <Icon className="h-5 w-5" />
+                {active ? (
+                  <span
+                    className="absolute top-1 h-1 w-6 rounded-pill bg-accent"
+                    aria-hidden
+                  />
+                ) : null}
+                <Icon className={cn("h-5 w-5", active && "text-accent")} />
                 {item.label}
               </Link>
             </li>

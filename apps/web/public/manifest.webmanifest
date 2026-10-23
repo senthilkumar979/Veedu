@@ -1,11 +1,11 @@
 {
-  "name": "Veedu",
-  "short_name": "Veedu",
+  "name": "Velan Illam",
+  "short_name": "Velan Illam",
   "description": "Calm household command center",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F6F6F8",
-  "theme_color": "#5046C7",
+  "background_color": "#F6F3EB",
+  "theme_color": "#355747",
   "orientation": "any",
   "icons": [
     {
