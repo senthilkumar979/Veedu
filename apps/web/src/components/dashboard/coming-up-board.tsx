@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { format, parseISO } from "date-fns";
 import { formatRelativeDue } from "@veedu/domain";
 import { useHouseholdData } from "@/lib/data";
 import { buildComingUp, type ComingUpItem } from "./coming-up";
 import { ExpandableSection } from "./expandable-section";
 
-const emptyLabel = "Nothing is due in the next 30 days.";
+const emptyLabel = "Nothing in the next 30 days.";
 
 export function ComingUpBoard() {
   const { importantDates, documents, homeServices } = useHouseholdData();
@@ -22,15 +23,9 @@ export function ComingUpBoard() {
 
   return (
     <ExpandableSection
-      eyebrow="Next 30 days"
+      eyebrow="30 days"
       title="Coming up"
-      summary={
-        <ComingUpList
-          items={items.slice(0, 3)}
-          isLoading={isLoading}
-          hasError={hasError}
-        />
-      }
+      summary={<ComingUpList items={items.slice(0, 4)} isLoading={isLoading} hasError={hasError} />}
     >
       <ComingUpList items={items} isLoading={isLoading} hasError={hasError} />
     </ExpandableSection>
@@ -46,28 +41,38 @@ function ComingUpList({
   isLoading: boolean;
   hasError: boolean;
 }) {
-  if (isLoading) return <p className="text-sm text-muted">Loading…</p>;
-  if (hasError) return <p className="text-sm text-muted">Coming up is unavailable.</p>;
-  if (items.length === 0) return <p className="text-sm text-muted">{emptyLabel}</p>;
+  if (isLoading) return <p className="py-2 text-sm text-muted">Loading…</p>;
+  if (hasError) return <p className="py-2 text-sm text-muted">Coming up is unavailable.</p>;
+  if (items.length === 0) return <p className="py-2 text-sm text-muted">{emptyLabel}</p>;
 
   return (
-    <ul className="space-y-2">
+    <ul className="divide-y divide-border">
       {items.map((item) => (
         <li key={item.id}>
-          <Link
-            href={item.href}
-            className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface-subtle px-3 py-3"
-          >
-            <span className="min-w-0">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-subtle">
-                {item.kind}
-              </span>
+          <Link href={item.href} className="flex items-center gap-3 py-2">
+            <DateMark due={item.due} />
+            <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium text-ink">{item.title}</span>
+              <span className="block truncate text-xs text-muted">
+                {item.kind} · {formatRelativeDue(item.due)}
+              </span>
             </span>
-            <span className="shrink-0 text-sm text-muted">{formatRelativeDue(item.due)}</span>
           </Link>
         </li>
       ))}
     </ul>
+  );
+}
+
+function DateMark({ due }: { due: string }) {
+  const date = parseISO(due);
+  if (Number.isNaN(date.getTime())) return null;
+  return (
+    <span className="w-9 shrink-0 text-center">
+      <span className="block text-[10px] font-semibold uppercase tracking-wide text-primary">
+        {format(date, "MMM")}
+      </span>
+      <span className="block text-base font-semibold leading-none text-ink">{format(date, "d")}</span>
+    </span>
   );
 }

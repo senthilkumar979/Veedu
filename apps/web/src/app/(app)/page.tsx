@@ -115,16 +115,29 @@ export default function DashboardPage() {
   }
 
   return (
-    <PageContainer
-      title={greetingForHour(new Date().getHours(), profile?.full_name ?? "there")}
-      description={`${household?.name ?? "Household"} · ${format(new Date(), "EEEE, d MMMM yyyy")}`}
-    >
-      <div className="flex flex-col gap-4">
-        <WeatherBoard places={places} />
-        <WeekCalendar events={weekEvents} />
-        <ComingUpBoard />
-        <div className="grid gap-4 lg:grid-cols-2">
+    <PageContainer>
+      <div className="mb-3 flex items-end justify-between gap-3">
+        <h1 className="text-xl font-semibold tracking-tight text-ink">
+          {greetingForHour(new Date().getHours(), profile?.full_name ?? "there")}
+        </h1>
+        <p className="text-right text-sm text-muted">
+          {household?.name ?? "Household"} · {format(new Date(), "EEE d MMM")}
+        </p>
+      </div>
+      <div className="grid gap-3 lg:grid-cols-12">
+        <div className="lg:col-span-5">
+          <WeatherBoard places={places} />
+        </div>
+        <div className="lg:col-span-7">
+          <ComingUpBoard />
+        </div>
+        <div className="lg:col-span-12">
+          <WeekCalendar events={weekEvents} />
+        </div>
+        <div className="lg:col-span-6">
           <TaskBoard tasks={openTasks} progress={progress} />
+        </div>
+        <div className="lg:col-span-6">
           <PaymentBoard payments={payments} />
         </div>
       </div>
