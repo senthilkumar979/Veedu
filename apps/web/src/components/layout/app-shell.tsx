@@ -12,6 +12,8 @@ import { useAuth } from "@/lib/auth";
 import { useHouseholdData } from "@/lib/data";
 import { Skeleton } from "@veedu/ui";
 
+const SIDEBAR_STORAGE_KEY = "velan-sidebar-collapsed";
+
 export function AppShell({ children }: { children: ReactNode }) {
   const { isReady, isAuthenticated, isOnboarded } = useAuth();
   const router = useRouter();
@@ -19,6 +21,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [commandOpen, setCommandOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifyOpen, setNotifyOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    if (stored === "1") setSidebarCollapsed(true);
+  }, []);
 
   useEffect(() => {
     if (!isReady) return;
@@ -56,7 +64,16 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-dvh overflow-hidden bg-background pt-[env(safe-area-inset-top)] text-ink">
-      <Sidebar />
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggle={() => {
+          setSidebarCollapsed((collapsed) => {
+            const next = !collapsed;
+            window.localStorage.setItem(SIDEBAR_STORAGE_KEY, next ? "1" : "0");
+            return next;
+          });
+        }}
+      />
       <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <Header
           onOpenCommand={() => setCommandOpen(true)}

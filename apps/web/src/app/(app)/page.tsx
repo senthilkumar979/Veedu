@@ -5,6 +5,7 @@ import { endOfWeek, format, parseISO, startOfWeek } from "date-fns";
 import { greetingForHour, taskProgress } from "@veedu/domain";
 import { PageContainer } from "@/components/layout/page-container";
 import { ErrorState, LoadingBlock } from "@/components/shared/states";
+import { ComingUpBoard } from "@/components/dashboard/coming-up-board";
 import { PaymentBoard } from "@/components/dashboard/payment-board";
 import { TaskBoard } from "@/components/dashboard/task-board";
 import { WeatherBoard, type WeatherPlace } from "@/components/dashboard/weather-board";
@@ -118,11 +119,14 @@ export default function DashboardPage() {
       title={greetingForHour(new Date().getHours(), profile?.full_name ?? "there")}
       description={`${household?.name ?? "Household"} · ${format(new Date(), "EEEE, d MMMM yyyy")}`}
     >
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="flex flex-col gap-4">
         <WeatherBoard places={places} />
         <WeekCalendar events={weekEvents} />
-        <TaskBoard tasks={openTasks} progress={progress} />
-        <PaymentBoard payments={payments} />
+        <ComingUpBoard />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <TaskBoard tasks={openTasks} progress={progress} />
+          <PaymentBoard payments={payments} />
+        </div>
       </div>
     </PageContainer>
   );

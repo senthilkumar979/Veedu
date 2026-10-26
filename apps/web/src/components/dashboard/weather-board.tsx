@@ -29,7 +29,7 @@ export function WeatherBoard({ places }: { places: WeatherPlace[] }) {
 
 function WeatherSummary({ places }: { places: WeatherPlace[] }) {
   return (
-    <ul className="grid gap-2 sm:grid-cols-2">
+    <ul className="grid gap-3 sm:grid-cols-2">
       {places.map((place) => (
         <li key={place.label} className="rounded-lg bg-surface-subtle px-3 py-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-subtle">

@@ -9,6 +9,7 @@ import {
   parseISO,
   startOfWeek,
 } from "date-fns";
+import { cn } from "@veedu/ui";
 import type { CalendarEvent } from "@veedu/types";
 import { googleEventCalendarLabel } from "@/lib/google/event-label";
 import { ExpandableSection } from "./expandable-section";
@@ -31,7 +32,7 @@ export function WeekCalendar({ events }: { events: CalendarEvent[] }) {
       }
       summary={<WeekStrip days={days} events={events} />}
     >
-      <ol className="space-y-4">
+      <ol className="space-y-6">
         {days.map((day) => {
           const items = eventsForDay(events, day);
           return (
@@ -62,16 +63,34 @@ function WeekStrip({
   events: CalendarEvent[];
 }) {
   return (
-    <ol className="grid grid-cols-7 gap-1">
+    <ol className="flex gap-3 overflow-x-auto pb-1">
       {days.map((day) => {
         const items = eventsForDay(events, day);
+        const isToday = isSameDay(day, new Date());
         return (
-          <li key={day.toISOString()} className="min-w-0 text-center">
+          <li
+            key={day.toISOString()}
+            className={cn(
+              "min-w-[8.5rem] flex-1 rounded-xl border bg-surface-subtle px-3 py-3",
+              isToday ? "border-2 border-primary" : "border-border",
+            )}
+          >
             <p className="text-xs font-medium text-subtle">{format(day, "EEE")}</p>
-            <p className="text-sm font-semibold text-ink">{format(day, "d")}</p>
-            <p className="truncate text-xs text-muted">
-              {items.length === 0 ? "—" : items.length === 1 ? items[0]?.title : `${items.length}`}
-            </p>
+            <p className="text-lg font-semibold text-ink">{format(day, "d")}</p>
+            {items.length === 0 ? (
+              <p className="mt-2 text-sm text-muted">Clear</p>
+            ) : (
+              <ul className="mt-2 space-y-1">
+                {items.slice(0, 2).map((event) => (
+                  <li key={event.id} className="truncate text-sm text-ink">
+                    {event.title}
+                  </li>
+                ))}
+                {items.length > 2 ? (
+                  <li className="text-xs text-muted">+{items.length - 2}</li>
+                ) : null}
+              </ul>
+            )}
           </li>
         );
       })}

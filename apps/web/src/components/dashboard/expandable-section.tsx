@@ -26,7 +26,7 @@ export function ExpandableSection({
   return (
     <section
       className={cn(
-        "flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface/95 shadow-card",
+        "flex min-h-0 flex-col overflow-hidden rounded-2xl border-2 border-border bg-surface shadow-[0_8px_24px_rgba(41,46,42,0.08)]",
         className,
       )}
     >
