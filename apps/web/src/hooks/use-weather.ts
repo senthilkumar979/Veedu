@@ -37,7 +37,7 @@ export function useWeather(
 ) {
   const key = parents.map((p) => `${p.label}:${p.place}`).join("|");
   return useQuery({
-    queryKey: ["weather", home ?? "", key],
+    queryKey: ["weather", "today-hours", home ?? "", key],
     queryFn: () => fetchWeather(home, parents),
     staleTime: 30 * 60 * 1000,
     enabled: Boolean(home || parents.length),

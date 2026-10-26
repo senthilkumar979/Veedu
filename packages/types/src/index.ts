@@ -321,12 +321,25 @@ export interface AppNotification {
   created_at: string;
 }
 
+export interface WeatherHour {
+  time: string;
+  temperature_c: number;
+  feels_like_c: number;
+  humidity: number;
+  precipitation_chance: number | null;
+  condition: string;
+}
+
 export interface WeatherSnapshot {
   location_label: string;
   temperature_c: number;
   condition: string;
   feels_like_c: number;
   humidity: number;
+  observed_at?: string;
+  high_c?: number;
+  low_c?: number;
+  hours?: WeatherHour[];
 }
 
 export interface AttentionItem {

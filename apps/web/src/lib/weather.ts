@@ -1,4 +1,4 @@
-import type { ParentLocation, WeatherSnapshot } from "@veedu/types";
+import type { ParentLocation, WeatherHour, WeatherSnapshot } from "@veedu/types";
 
 const WMO_CONDITIONS: Record<number, string> = {
   0: "Clear",
@@ -72,21 +72,37 @@ export async function fetchForecast(
     "current",
     "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code",
   );
+  url.searchParams.set(
+    "hourly",
+    "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,precipitation_probability",
+  );
+  url.searchParams.set("forecast_days", "1");
   url.searchParams.set("timezone", "auto");
   const res = await fetch(url.toString(), { next: { revalidate: 1800 } });
   if (!res.ok) throw new Error(`Open-Meteo forecast failed (${res.status})`);
   const data = (await res.json()) as {
     current?: {
+      time?: string;
       temperature_2m?: number;
       relative_humidity_2m?: number;
       apparent_temperature?: number;
       weather_code?: number;
+    };
+    hourly?: {
+      time?: string[];
+      temperature_2m?: Array<number | null>;
+      relative_humidity_2m?: Array<number | null>;
+      apparent_temperature?: Array<number | null>;
+      weather_code?: Array<number | null>;
+      precipitation_probability?: Array<number | null>;
     };
   };
   const current = data.current;
   if (!current || current.temperature_2m == null) {
     throw new Error("Open-Meteo returned no current weather");
   }
+  const hours = mapHours(data.hourly);
+  const temps = hours.map((hour) => hour.temperature_c);
   const code = current.weather_code ?? 0;
   return {
     location_label: locationLabel,
@@ -96,7 +112,37 @@ export async function fetchForecast(
     ),
     humidity: Math.round(current.relative_humidity_2m ?? 0),
     condition: WMO_CONDITIONS[code] ?? `Code ${code}`,
+    observed_at: current.time,
+    high_c: temps.length ? Math.max(...temps) : undefined,
+    low_c: temps.length ? Math.min(...temps) : undefined,
+    hours,
   };
+}
+
+function mapHours(hourly: {
+  time?: string[];
+  temperature_2m?: Array<number | null>;
+  relative_humidity_2m?: Array<number | null>;
+  apparent_temperature?: Array<number | null>;
+  weather_code?: Array<number | null>;
+  precipitation_probability?: Array<number | null>;
+} | undefined): WeatherHour[] {
+  const times = hourly?.time ?? [];
+  return times.flatMap((time, index) => {
+    const temperature = hourly?.temperature_2m?.[index];
+    if (temperature == null) return [];
+    const code = hourly?.weather_code?.[index] ?? 0;
+    const feels = hourly?.apparent_temperature?.[index];
+    const rain = hourly?.precipitation_probability?.[index];
+    return [{
+      time,
+      temperature_c: Math.round(temperature),
+      feels_like_c: Math.round(feels ?? temperature),
+      humidity: Math.round(hourly?.relative_humidity_2m?.[index] ?? 0),
+      precipitation_chance: rain == null ? null : Math.round(rain),
+      condition: WMO_CONDITIONS[code] ?? `Code ${code}`,
+    }];
+  });
 }
 
 export async function weatherForPlace(
