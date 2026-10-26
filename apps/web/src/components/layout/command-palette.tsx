@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@veedu/ui";
+import { startNavigation } from "@/lib/navigation-progress";
 import {
   Bot,
   CalendarDays,
@@ -63,6 +64,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm hover:bg-surface-hover"
                   onClick={() => {
                     onOpenChange(false);
+                    startNavigation();
                     router.push(cmd.href);
                   }}
                 >

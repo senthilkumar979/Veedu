@@ -130,9 +130,9 @@ export default function PaymentsPage() {
             return (
               <li key={`${row.kind}-${row.item.id}`}>
                 <Card
-                  className={
-                    overdue ? "border-danger/40 bg-danger/5" : undefined
-                  }
+                  className={`border-border bg-surface shadow-card transition-colors hover:border-primary/30 hover:bg-primary-soft/60 ${
+                    overdue ? "border-l-4 border-l-warning" : ""
+                  }`}
                 >
                   <CardContent className="flex flex-wrap items-center gap-3 py-4">
                     <div className="min-w-0 flex-1">

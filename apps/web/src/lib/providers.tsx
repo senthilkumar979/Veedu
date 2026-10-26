@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { TooltipProvider } from "@veedu/ui";
+import { GlobalLoaders } from "@/components/layout/global-loaders";
 import { AuthProvider } from "./auth";
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -22,7 +23,10 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       <AuthProvider>
-        <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+        <TooltipProvider delayDuration={200}>
+          <GlobalLoaders />
+          {children}
+        </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

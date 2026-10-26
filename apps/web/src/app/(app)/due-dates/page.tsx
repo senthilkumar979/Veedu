@@ -118,11 +118,9 @@ export default function DueDatesPage() {
               <li key={row.id}>
                 <Link href={row.href}>
                   <Card
-                    className={
-                      overdue
-                        ? "border-danger/40 bg-danger/5 hover:bg-danger/10"
-                        : "hover:bg-surface-hover"
-                    }
+                    className={`border-border bg-surface shadow-card transition-colors hover:border-primary/30 hover:bg-primary-soft/60 ${
+                      overdue ? "border-l-4 border-l-warning" : ""
+                    }`}
                   >
                     <CardContent className="flex items-center gap-3 py-3">
                       <div className="min-w-0 flex-1">
@@ -131,10 +129,14 @@ export default function DueDatesPage() {
                         </p>
                         <p className="text-xs text-muted">{row.kind}</p>
                       </div>
-                      <span className="text-sm text-ink">
+                      <span
+                        className={`shrink-0 text-sm font-medium ${
+                          overdue ? "text-warning" : "text-primary"
+                        }`}
+                      >
                         {formatRelativeDue(row.due)}
                       </span>
-                      {overdue ? <Badge tone="danger">Overdue</Badge> : null}
+                      {overdue ? <Badge tone="warning">Overdue</Badge> : null}
                     </CardContent>
                   </Card>
                 </Link>
