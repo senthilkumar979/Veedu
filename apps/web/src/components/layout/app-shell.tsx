@@ -24,8 +24,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(SIDEBAR_STORAGE_KEY);
-    if (stored === "1") setSidebarCollapsed(true);
+    const media = window.matchMedia("(max-width: 1199px)");
+    const apply = () => {
+      const stored = window.localStorage.getItem(SIDEBAR_STORAGE_KEY);
+      setSidebarCollapsed(media.matches ? true : stored === "1");
+    };
+    apply();
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
   }, []);
 
   useEffect(() => {
@@ -69,7 +75,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         onToggle={() => {
           setSidebarCollapsed((collapsed) => {
             const next = !collapsed;
-            window.localStorage.setItem(SIDEBAR_STORAGE_KEY, next ? "1" : "0");
+            if (window.innerWidth >= 1200) {
+              window.localStorage.setItem(SIDEBAR_STORAGE_KEY, next ? "1" : "0");
+            }
             return next;
           });
         }}
@@ -81,8 +89,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           onOpenNotifications={() => setNotifyOpen(true)}
           unreadCount={unread}
         />
-        <main className="min-h-0 flex-1 overflow-y-auto bg-background bg-[url('/brand/dashboard-bg.png')] bg-cover bg-center pb-20 md:pb-3">
-          {children}
+        <main className="dashboard-canvas relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-background pb-20 md:pb-3">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-[url('/brand/dashboard-bg.png')] bg-cover bg-center opacity-40 [mask-image:radial-gradient(ellipse_at_center,transparent_46%,#000_88%)]"
+          />
+          <div className="relative min-w-0">{children}</div>
         </main>
         <MobileNavigation />
       </div>

@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
-import { endOfWeek, format, parseISO, startOfWeek } from "date-fns";
-import { greetingForHour, taskProgress } from "@veedu/domain";
+import { format, isSameDay, parseISO } from "date-fns";
+import { daysUntil, greetingForHour } from "@veedu/domain";
 import { PageContainer } from "@/components/layout/page-container";
 import { ErrorState, LoadingBlock } from "@/components/shared/states";
 import { ComingUpBoard } from "@/components/dashboard/coming-up-board";
-import { PaymentBoard } from "@/components/dashboard/payment-board";
+import { OverviewMetrics } from "@/components/dashboard/overview-metrics";
+import { PaymentBoard, collectUpcomingPayments } from "@/components/dashboard/payment-board";
 import { TaskBoard } from "@/components/dashboard/task-board";
 import { WeatherBoard, type WeatherPlace } from "@/components/dashboard/weather-board";
 import { WeekCalendar } from "@/components/dashboard/week-calendar";
@@ -27,42 +28,19 @@ export default function DashboardPage() {
     tasks.isError || events.isError || bills.isError || subscriptions.isError;
 
   const weekEvents = useMemo(() => {
-    const start = startOfWeek(new Date(), { weekStartsOn: 1 });
-    const end = endOfWeek(start, { weekStartsOn: 1 });
-    return (events.data ?? [])
-      .filter((event) => {
-        const at = parseISO(event.start_at);
-        return at >= start && at <= end;
-      })
-      .sort((a, b) => a.start_at.localeCompare(b.start_at));
+    return [...(events.data ?? [])].sort((a, b) => a.start_at.localeCompare(b.start_at));
   }, [events.data]);
 
-  const progress = taskProgress(tasks.data ?? []);
-  const openTasks = (tasks.data ?? [])
-    .filter((task) => task.status !== "done" && task.status !== "cancelled")
-    .sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"));
-
-  const payments = [
-    ...(bills.data ?? []).map((bill) => ({
-      id: bill.id,
-      name: bill.name,
-      amount: bill.amount,
-      currency: bill.currency,
-      due_date: bill.due_date,
-      status: bill.status,
-      frequency: bill.frequency,
-      provider: bill.provider,
-    })),
-    ...(subscriptions.data ?? []).map((item) => ({
-      id: item.id,
-      name: item.name,
-      amount: item.amount,
-      currency: item.currency,
-      due_date: item.next_renewal,
-      frequency: item.billing_frequency,
-      provider: item.provider,
-    })),
-  ].sort((a, b) => a.due_date.localeCompare(b.due_date));
+  const todayEvents = weekEvents.filter((event) =>
+    isSameDay(parseISO(event.start_at), new Date()),
+  ).length;
+  const openTasks = (tasks.data ?? []).filter(
+    (task) => !task.archived_at && task.status !== "done" && task.status !== "cancelled",
+  );
+  const overdueTasks = openTasks.filter(
+    (task) => task.due_date && daysUntil(task.due_date) < 0,
+  ).length;
+  const payments = collectUpcomingPayments(bills.data ?? [], subscriptions.data ?? []);
 
   const homeError = weatherQuery.isError
     ? "Weather unavailable"
@@ -92,7 +70,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <PageContainer title="Dashboard" description="Loading your household…">
+      <PageContainer>
         <LoadingBlock rows={4} />
       </PageContainer>
     );
@@ -117,28 +95,29 @@ export default function DashboardPage() {
   return (
     <PageContainer>
       <div className="mb-3 flex items-end justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight text-ink">
-          {greetingForHour(new Date().getHours(), profile?.full_name ?? "there")}
-        </h1>
-        <p className="text-right text-sm text-muted">
-          {household?.name ?? "Household"} · {format(new Date(), "EEE d MMM")}
-        </p>
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-semibold tracking-tight text-ink">
+            {greetingForHour(new Date().getHours(), profile?.full_name ?? "there")}
+          </h1>
+          <p className="truncate text-sm text-muted">{household?.name ?? "Household"}</p>
+        </div>
+        <p className="shrink-0 text-sm text-muted">{format(new Date(), "EEE d MMM")}</p>
       </div>
-      <div className="grid gap-3 lg:grid-cols-12">
-        <div className="lg:col-span-5">
-          <WeatherBoard places={places} />
+      <div className="dashboard-grid">
+        <div className="dashboard-span">
+          <OverviewMetrics
+            todayEvents={todayEvents}
+            openTasks={openTasks.length}
+            overdueTasks={overdueTasks}
+            duePayments={payments}
+          />
         </div>
-        <div className="lg:col-span-7">
-          <ComingUpBoard />
-        </div>
-        <div className="lg:col-span-12">
-          <WeekCalendar events={weekEvents} />
-        </div>
-        <div className="lg:col-span-6">
-          <TaskBoard tasks={openTasks} progress={progress} />
-        </div>
-        <div className="lg:col-span-6">
-          <PaymentBoard payments={payments} />
+        <WeatherBoard places={places} />
+        <WeekCalendar events={weekEvents} />
+        <ComingUpBoard />
+        <PaymentBoard payments={payments} />
+        <div className="dashboard-span">
+          <TaskBoard tasks={openTasks} />
         </div>
       </div>
     </PageContainer>

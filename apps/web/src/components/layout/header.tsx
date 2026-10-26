@@ -14,9 +14,6 @@ import {
   DropdownTrigger,
 } from "@veedu/ui";
 import { useAuth } from "@/lib/auth";
-import { useWeather } from "@/hooks/use-weather";
-import { WeatherChip } from "@/components/layout/weather-chips";
-import { resolveParentLocations } from "@/lib/household/parent-locations";
 
 interface HeaderProps {
   onOpenSearch: () => void;
@@ -32,10 +29,6 @@ export function Header({
   unreadCount = 0,
 }: HeaderProps) {
   const { profile, household, signOut, mode } = useAuth();
-  const parents = resolveParentLocations(household);
-  const weather = useWeather(household?.home_location, parents);
-  const home = weather.data?.home.snapshot;
-  const parentSnaps = weather.data?.parents ?? [];
   const initials =
     profile?.full_name
       ?.split(" ")
@@ -45,7 +38,7 @@ export function Header({
       .toUpperCase() || "V";
 
   return (
-    <header className="sticky top-0 z-30 flex h-[4.25rem] shrink-0 items-center gap-3 border-b border-border/80 bg-surface/95 px-4 backdrop-blur-md md:px-6">
+    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-surface px-3 md:px-4">
       <div className="min-w-0 md:hidden">
         <p className="truncate text-sm font-semibold text-ink">Velan Illam</p>
         <p className="truncate text-xs text-muted">
@@ -53,36 +46,11 @@ export function Header({
         </p>
       </div>
 
-      <div className="hidden min-w-0 flex-1 items-center gap-3 lg:flex">
-        <p className="truncate text-sm text-muted">
-          <span className="font-medium text-ink">
-            {format(new Date(), "EEEE")}
-          </span>
-          <span className="text-subtle"> · {format(new Date(), "d MMM · HH:mm")}</span>
-          {mode === "guest" ? (
-            <span className="text-warning"> · Guest</span>
-          ) : null}
-        </p>
-        {home ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <WeatherChip
-              label="Home"
-              temp={home.temperature_c}
-              place={home.location_label}
-            />
-            {parentSnaps.map((row, i) =>
-              row.snapshot ? (
-                <WeatherChip
-                  key={`${row.label}-${i}`}
-                  label={row.label || `Parent ${i + 1}`}
-                  temp={row.snapshot.temperature_c}
-                  place={row.snapshot.location_label}
-                />
-              ) : null,
-            )}
-          </div>
-        ) : null}
-      </div>
+      <p className="hidden min-w-0 flex-1 truncate text-sm text-muted md:block">
+        <span className="font-medium text-ink">{format(new Date(), "EEE d MMM")}</span>
+        <span> · {format(new Date(), "HH:mm")}</span>
+        {mode === "guest" ? <span className="text-warning"> · Guest</span> : null}
+      </p>
 
       <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
         <Button
@@ -102,7 +70,7 @@ export function Header({
           className="h-11 gap-2 rounded-xl"
         >
           <Command className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Quick add</span>
+          <span className="hidden xl:inline">Quick add</span>
         </Button>
         <Button
           variant="ghost"

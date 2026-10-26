@@ -5,7 +5,7 @@ import { format, parseISO } from "date-fns";
 import { formatRelativeDue } from "@veedu/domain";
 import { useHouseholdData } from "@/lib/data";
 import { buildComingUp, type ComingUpItem } from "./coming-up";
-import { ExpandableSection } from "./expandable-section";
+import { CardLink, DashboardCard } from "./dashboard-card";
 
 const emptyLabel = "Nothing in the next 30 days.";
 
@@ -19,16 +19,16 @@ export function ComingUpBoard() {
     importantDates.data ?? [],
     documents.data ?? [],
     homeServices.data ?? [],
-  );
+  ).slice(0, 4);
 
   return (
-    <ExpandableSection
-      eyebrow="30 days"
+    <DashboardCard
       title="Coming up"
-      summary={<ComingUpList items={items.slice(0, 4)} isLoading={isLoading} hasError={hasError} />}
+      meta="30 days"
+      action={<CardLink href="/important-dates">All</CardLink>}
     >
       <ComingUpList items={items} isLoading={isLoading} hasError={hasError} />
-    </ExpandableSection>
+    </DashboardCard>
   );
 }
 
@@ -41,15 +41,18 @@ function ComingUpList({
   isLoading: boolean;
   hasError: boolean;
 }) {
-  if (isLoading) return <p className="py-2 text-sm text-muted">Loading…</p>;
-  if (hasError) return <p className="py-2 text-sm text-muted">Coming up is unavailable.</p>;
-  if (items.length === 0) return <p className="py-2 text-sm text-muted">{emptyLabel}</p>;
+  if (isLoading) return <p className="py-1 text-sm text-muted">Loading…</p>;
+  if (hasError) return <p className="py-1 text-sm text-muted">Coming up is unavailable.</p>;
+  if (items.length === 0) return <p className="py-1 text-sm text-muted">{emptyLabel}</p>;
 
   return (
     <ul className="divide-y divide-border">
       {items.map((item) => (
         <li key={item.id}>
-          <Link href={item.href} className="flex items-center gap-3 py-2">
+          <Link
+            href={item.href}
+            className="flex items-center gap-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
             <DateMark due={item.due} />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium text-ink">{item.title}</span>

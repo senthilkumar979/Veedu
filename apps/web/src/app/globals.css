@@ -42,6 +42,33 @@ a {
   animation: dash-in 560ms var(--transition-slow) 80ms both;
 }
 
+.dashboard-canvas {
+  container-type: inline-size;
+  container-name: dashboard;
+}
+
+.dashboard-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.dashboard-span {
+  grid-column: 1 / -1;
+}
+
+@container dashboard (min-width: 760px) {
+  .dashboard-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-dash-in,
+  .animate-dash-in-delay {
+    animation: none;
+  }
+}
+
 @keyframes veedu-progress {
   0% {
     transform: translateX(-120%);
